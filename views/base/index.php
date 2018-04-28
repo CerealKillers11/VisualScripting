@@ -121,6 +121,71 @@
                 width: 100%;
             }
         }
+
+        .accordion {
+            background-color: #eee;
+            color: #444;
+            cursor: pointer;
+            padding: 18px;
+            width: 100%;
+            border: none;
+            text-align: left;
+            outline: none;
+            font-size: 15px;
+            transition: 0.4s;
+        }
+
+        .accordion:after {
+            content: '\002B';
+            color: #777;
+            font-weight: bold;
+            float: right;
+            margin-left: 5px;
+        }
+        .active:after {
+            content: "\2212";
+        }
+        .active, .accordion:hover {
+            background-color: #ccc;
+        }
+        .panel {
+            padding: 0 18px;
+            background-color: white;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.2s ease-out;
+            border: 3px solid white;
+        }
+        .library_element{
+            background-color: #c7ddef;
+            color: #444;
+            /*cursor: pointer;*/
+            padding: 5px;
+            width: 80%;
+            border-bottom: 3px solid white;
+            text-align: center;
+            outline: none;
+            font-size: 15px;
+        }
+        .canvas_element{
+            background-color: #6f5499;
+            color: #444;
+            /*cursor: pointer;*/
+            padding: 5px;
+            width: 50%;
+            border-bottom: 3px solid white;
+            text-align: center;
+            font-size: 22px;
+            font-style: italic;
+            margin: auto;
+
+        }
+         #div1 {
+             width: 100%;
+             height: 90%;
+             padding: 20px;
+             border: 1px solid #aaaaaa;
+         }
     </style>
 </head>
 <body>
@@ -140,36 +205,83 @@
 <div class="row">
     <div class="leftcolumn">
         <div class="library_menu">
-            <h2>TITLE HEADING</h2>
-            <h5>Title description, Dec 7, 2017</h5>
-            <div class="fakeimg" style="height:200px;">Image</div>
-            <p>Some text..</p>
-            <p>Bla! bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla!</p>
-            <p>Sunt in culpa qui officia deserunt mollit anim id est laborum consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco.</p>
+            <button class="accordion">Basic Commands</button>
+            <div class="panel">
+                <div class="library_element" id="le1" draggable="true" ondragstart="drag(event)">
+                    <p>Some text 1</p>
+                </div>
+                <div class="library_element" id="le2" draggable="true" ondragstart="drag(event)">
+                    <p>Some text 2</p>
+                </div>
+                <div class="library_element" id="le3" draggable="true" ondragstart="drag(event)">
+                    <p>Some text 3</p>
+                </div>
+            </div>
+            <button class="accordion">My Commands</button>
+            <div class="panel">
+                <div class="library_element">
+                    <p>Some text 1</p>
+                </div>
+                <div class="library_element">
+                    <p>Some text 2</p>
+                </div>
+                <div class="library_element">
+                    <p>Some text 3</p>
+                </div>
+            </div>
+            <button class="accordion">Amdocs Special</button>
+            <div class="panel">
+                <div class="library_element">
+                    <p>Some text 1</p>
+                </div>
+                <div class="library_element">
+                    <p>Some text 2</p>
+                </div>
+                <div class="library_element">
+                    <p>Some text 3</p>
+                </div>
+            </div>
         </div>
+        <script>
+            var acc = document.getElementsByClassName("accordion");
+            var i;
+
+            for (i = 0; i < acc.length; i++) {
+                acc[i].addEventListener("click", function() {
+                    this.classList.toggle("active");
+                    var panel = this.nextElementSibling;
+                    if (panel.style.maxHeight){
+                        panel.style.maxHeight = null;
+                    } else {
+                        panel.style.maxHeight = panel.scrollHeight + "px";
+                    }
+                });
+            }
+        </script>
     </div>
     <div class="rightcolumn">
-        <div class="canvas">
-            <h2>About Me</h2>
-            <div class="fakeimg" style="height:100px;">Image</div>
-            <p>Some text about me in culpa qui officia deserunt mollit anim..</p>
-            <p>Bla! bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla!</p>
-            <p>Sunt in culpa qui officia deserunt mollit anim id est laborum consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco.</p>
-            <p>Bla! bla bla bla bla bla bllllllllllfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffflllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllla bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla!</p>
-            <p>Sunt in culpa qui officia deserunt mollit anim id est laborum consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco.</p>
-            <p>Bla! bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla!</p>
-            <p>Sunt in culpa qui officia deserunt mollit anim id est laborum consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco.</p>
-            <p>Bla! bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla!</p>
-            <p>Sunt in culpa qui officia deserunt mollit anim id est laborum consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco.</p>
-            <p>Bla! bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla!</p>
-            <p>Sunt in culpa qui officia deserunt mollit anim id est laborum consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco.</p>
-            <p>Bla! bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla!</p>
-            <p>Sunt in culpa qui officia deserunt mollit anim id est laborum consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco.</p>
-            <p>Bla! bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla!</p>
-            <p>Sunt in culpa qui officia deserunt mollit anim id est laborum consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco.</p>
-
+        <div class="canvas" id="can" ondrop="drop(event)" ondragover="allowDrop(event)">
         </div>
     </div>
+    <script>
+        function allowDrop(ev) {
+            ev.preventDefault();
+        }
+
+        function drag(ev) {
+            ev.dataTransfer.setData("text", ev.target.id);
+        }
+
+        function drop(ev) {
+            ev.preventDefault();
+            var data=ev.dataTransfer.getData("text");
+            var innerText = document.getElementById(data).innerText;
+            var copy = document.createElement("div");
+            copy.setAttribute("class", "canvas_element");
+            copy.innerText = innerText;
+            ev.target.appendChild(copy);
+        }
+    </script>
 </div>
 
 <div class="footer">
