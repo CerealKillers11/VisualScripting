@@ -1,6 +1,36 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <link rel="stylesheet" href="jquery-ui.min.css">
+    <script src="external/jquery/jquery.js"></script>
+    <script src="jquery-ui.min.js"></script>
+    <style>
+        ul {
+            list-style-type: none;
+            padding: 0;
+            margin: 0 0 10px;
+        }
+
+        li {
+            margin: 5px;
+            padding: 5px;
+            width: 200px;
+        }
+    </style>
+    <style>
+        #sortable1, #sortable2 {
+            list-style-type: none;
+            margin: 0;
+            padding: 0;
+            zoom: 1;
+        }
+
+        #sortable1 li, #sortable2 li {
+            margin: 0 5px 5px 5px;
+            padding: 3px;
+            width: 90%;
+        }
+    </style>
     <style>
         * {
             box-sizing: border-box;
@@ -62,13 +92,6 @@
             width: 75%;
             background-color: #f1f1f1;
             padding-left: 20px;
-        }
-
-        /* Fake image */
-        .fakeimg {
-            background-color: #aaa;
-            width: 100%;
-            padding: 20px;
         }
 
         /* Add a left side menu - vertical scroll only */
@@ -142,12 +165,15 @@
             float: right;
             margin-left: 5px;
         }
+
         .active:after {
             content: "\2212";
         }
+
         .active, .accordion:hover {
             background-color: #ccc;
         }
+
         .panel {
             padding: 0 18px;
             background-color: white;
@@ -156,10 +182,10 @@
             transition: max-height 0.2s ease-out;
             border: 3px solid white;
         }
-        .library_element{
+
+        .library_element {
             background-color: #c7ddef;
             color: #444;
-            /*cursor: pointer;*/
             padding: 5px;
             width: 80%;
             border-bottom: 3px solid white;
@@ -167,25 +193,19 @@
             outline: none;
             font-size: 15px;
         }
-        .canvas_element{
-            background-color: #6f5499;
-            color: #444;
-            /*cursor: pointer;*/
-            padding: 5px;
-            width: 50%;
-            border-bottom: 3px solid white;
-            text-align: center;
-            font-size: 22px;
-            font-style: italic;
-            margin: auto;
 
+        .canvas_element {
+            background-color: #f0ad4e;
+            color: #444;
+            padding: 20px;
+            width: 350px;
+            text-align: center;
+            outline: none;
+            font-size: 15px;
+            font-style: italic;
+            margin-bottom: 2px;
+            border: 1px solid whitesmoke;
         }
-         #div1 {
-             width: 100%;
-             height: 90%;
-             padding: 20px;
-             border: 1px solid #aaaaaa;
-         }
     </style>
 </head>
 <body>
@@ -207,50 +227,52 @@
         <div class="library_menu">
             <button class="accordion">Basic Commands</button>
             <div class="panel">
-                <div class="library_element" id="le1" draggable="true" ondragstart="drag(event)">
-                    <p>Some text 1</p>
+                <div class="library_element" name="le1"> <!--draggable="true" ondragstart="drag(event)"-->
+                    Some text 1
                 </div>
-                <div class="library_element" id="le2" draggable="true" ondragstart="drag(event)">
-                    <p>Some text 2</p>
+                <div class="library_element" name="le2">
+                    Some text 2
                 </div>
-                <div class="library_element" id="le3" draggable="true" ondragstart="drag(event)">
-                    <p>Some text 3</p>
+                <div class="library_element" name="le3">
+                    Some text 3
                 </div>
+
             </div>
             <button class="accordion">My Commands</button>
-            <div class="panel">
+            <div class="panel" >
                 <div class="library_element">
-                    <p>Some text 1</p>
+                    Some text 1
                 </div>
                 <div class="library_element">
-                    <p>Some text 2</p>
+                    Some text 2
                 </div>
                 <div class="library_element">
-                    <p>Some text 3</p>
+                    Some text 3
                 </div>
             </div>
             <button class="accordion">Amdocs Special</button>
             <div class="panel">
                 <div class="library_element">
-                    <p>Some text 1</p>
+                    Some text 1
                 </div>
                 <div class="library_element">
-                    <p>Some text 2</p>
+                    Some text 2
                 </div>
                 <div class="library_element">
-                    <p>Some text 3</p>
+                    Some text 3
                 </div>
             </div>
         </div>
+
         <script>
-            var acc = document.getElementsByClassName("accordion");
-            var i;
+            let acc = document.getElementsByClassName("accordion");
+            let i;
 
             for (i = 0; i < acc.length; i++) {
-                acc[i].addEventListener("click", function() {
+                acc[i].addEventListener("click", function () {
                     this.classList.toggle("active");
-                    var panel = this.nextElementSibling;
-                    if (panel.style.maxHeight){
+                    let panel = this.nextElementSibling;
+                    if (panel.style.maxHeight) {
                         panel.style.maxHeight = null;
                     } else {
                         panel.style.maxHeight = panel.scrollHeight + "px";
@@ -260,27 +282,59 @@
         </script>
     </div>
     <div class="rightcolumn">
-        <div class="canvas" id="can" ondrop="drop(event)" ondragover="allowDrop(event)">
+        <div class="canvas" id="canvas1">
+            <div id="sortable">
+                <div class="canvas_element ui-state-disabled" name="start">Start</div>
+                <div class="canvas_element" name="available space">available space</div>
+                <div class="canvas_element ui-state-disabled" name="end">End</div>
+            </div>
+            <script>
+                $(document).ready(function(){
+                    $("p").click(function(){
+                        /*$("#sortable").each*/
+                        let order = "";
+                        $( "div.canvas_element" ).each(function() {
+                            order += $( this ).attr("name") + "\n";
+                        });
+                        alert(order);
+                    });
+                });
+            </script>
+            <p>Click on this paragraph.</p>
         </div>
     </div>
     <script>
-        function allowDrop(ev) {
-            ev.preventDefault();
-        }
-
-        function drag(ev) {
-            ev.dataTransfer.setData("text", ev.target.id);
-        }
-
-        function drop(ev) {
-            ev.preventDefault();
-            var data=ev.dataTransfer.getData("text");
-            var innerText = document.getElementById(data).innerText;
-            var copy = document.createElement("div");
-            copy.setAttribute("class", "canvas_element");
-            copy.innerText = innerText;
-            ev.target.appendChild(copy);
-        }
+        $(function () {
+            $("#accordion").accordion({
+                collapsible: true
+            });
+        });
+    </script>
+    <script>
+        $(function () {
+            $("#sortable").sortable({
+                items: "div:not(.ui-state-disabled)"
+            });
+            $("#sortable div, .library_element,.canvas_element").disableSelection();
+        });
+    </script>
+    <script>
+        $(function () {
+            $("#sortable").sortable({
+                revert: true
+            });
+            $("div.library_element").draggable({
+                connectToSortable: "#sortable",
+                helper: function () {
+                    let returned = $(this).clone();
+                    returned.switchClass("library_element", "canvas_element");
+                    //TODO take from db the info for the canvas element
+                    return returned;
+                },
+                revert: "invalid",
+            });
+            $("ul, li").disableSelection();
+        });
     </script>
 </div>
 
