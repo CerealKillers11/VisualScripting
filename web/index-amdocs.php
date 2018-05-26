@@ -219,7 +219,8 @@
     <a href="#">Build</a>
     <a href="#">Save</a>
     <a href="#">Add Command</a>
-    <a href="#" style="float:right">FAQ</a>
+    <a href="#">FAQ</a>
+    <a href="#"  style="float:right">Log out</a>
 </div>
 
 <div class="row">
