@@ -1,7 +1,7 @@
 <?php
 /* @var $this yii\web\View */
 
-
+use yii\widgets\Menu;
 
 $pub1 = Yii::$app->assetManager->publish(__DIR__ . '/js/jquery.js');
 $this->registerJsFile($pub1[1], ['depends' => ['yii\web\JqueryAsset']]);
@@ -16,8 +16,9 @@ $this->registerCssFile($pub3[1], ['depends' => ['yii\web\JqueryAsset']]);
 
 ?>
 
-<html>
-<head>
+<?php $this->beginPage() ?>
+<div class="amdocs-app-index">
+
     <link rel="stylesheet" href="css/jquery-ui.min.css">
     <script src="js/jquery.js"></script>
     <script src="js/jquery-ui.min.js"></script>
@@ -33,8 +34,7 @@ $this->registerCssFile($pub3[1], ['depends' => ['yii\web\JqueryAsset']]);
             padding: 5px;
             width: 200px;
         }
-    </style>
-    <style>
+
         #sortable1, #sortable2 {
             list-style-type: none;
             margin: 0;
@@ -47,8 +47,7 @@ $this->registerCssFile($pub3[1], ['depends' => ['yii\web\JqueryAsset']]);
             padding: 3px;
             width: 90%;
         }
-    </style>
-    <style>
+
         * {
             box-sizing: border-box;
         }
@@ -138,13 +137,13 @@ $this->registerCssFile($pub3[1], ['depends' => ['yii\web\JqueryAsset']]);
             clear: both;
         }
 
-        /* Footer */
-        .footer {
-            padding: 20px;
-            text-align: center;
-            background: #ddd;
-            margin-top: 20px;
-        }
+        /*!* Footer *!*/
+        /*.footer {*/
+            /*padding: 20px;*/
+            /*text-align: center;*/
+            /*background: #ddd;*/
+            /*margin-top: 20px;*/
+        /*}*/
 
         /* Responsive layout - when the screen is less than 800px wide, make the two columns stack on top of each other instead of next to each other */
         @media screen and (max-width: 800px) {
@@ -161,7 +160,7 @@ $this->registerCssFile($pub3[1], ['depends' => ['yii\web\JqueryAsset']]);
                 width: 100%;
             }
         }
-
+s
         .accordion {
             background-color: #eee;
             color: #444;
@@ -224,143 +223,135 @@ $this->registerCssFile($pub3[1], ['depends' => ['yii\web\JqueryAsset']]);
             border: 1px solid whitesmoke;
         }
     </style>
-</head>
-<body>
 
-<div class="header">
-    <h1>Amdocs Project</h1>
-</div>
 
-<div class="topnav">
-    <a href="#">Home</a>
-    <a href="#">Build</a>
-    <a href="#">Save</a>
-    <a href="#">Add Command</a>
-    <a href="#">FAQ</a>
-    <a href="#"  style="float:right">Log out</a>
-</div>
+<!--    <div class="topnav">-->
+<!--        <a href="#">Home</a>-->
+<!--        <a href="#">Build</a>-->
+<!--        <a href="#">Save</a>-->
+<!--        <a href="#">Add Command</a>-->
+<!--        <a href="#">FAQ</a>-->
+<!--        <a href="#"  style="float:right">Log out</a>-->
+<!--    </div>-->
 
-<div class="row">
-    <div class="leftcolumn">
-        <div class="library_menu">
-            <button class="accordion">Basic Commands</button>
-            <div class="panel">
-                <div class="library_element" name="le1"> <!--draggable="true" ondragstart="drag(event)"-->
-                    Some text 1
+    <div class="row">
+        <div class="leftcolumn">
+            <div class="library_menu">
+                <button class="accordion">Basic Commands</button>
+                <div class="panel">
+                    <div class="library_element" name="le1"> <!--draggable="true" ondragstart="drag(event)"-->
+                        Some text 1
+                    </div>
+                    <div class="library_element" name="le2">
+                        Some text 2
+                    </div>
+                    <div class="library_element" name="le3">
+                        Some text 3
+                    </div>
+
                 </div>
-                <div class="library_element" name="le2">
-                    Some text 2
+                <button class="accordion">My Commands</button>
+                <div class="panel" >
+                    <div class="library_element">
+                        Some text 1
+                    </div>
+                    <div class="library_element">
+                        Some text 2
+                    </div>
+                    <div class="library_element">
+                        Some text 3
+                    </div>
                 </div>
-                <div class="library_element" name="le3">
-                    Some text 3
+                <button class="accordion">Amdocs Special</button>
+                <div class="panel">
+                    <div class="library_element">
+                        Some text 1
+                    </div>
+                    <div class="library_element">
+                        Some text 2
+                    </div>
+                    <div class="library_element">
+                        Some text 3
+                    </div>
                 </div>
-
             </div>
-            <button class="accordion">My Commands</button>
-            <div class="panel" >
-                <div class="library_element">
-                    Some text 1
+
+            <script>
+                let acc = document.getElementsByClassName("accordion");
+                let i;
+
+                for (i = 0; i < acc.length; i++) {
+                    acc[i].addEventListener("click", function () {
+                        this.classList.toggle("active");
+                        let panel = this.nextElementSibling;
+                        if (panel.style.maxHeight) {
+                            panel.style.maxHeight = null;
+                        } else {
+                            panel.style.maxHeight = panel.scrollHeight + "px";
+                        }
+                    });
+                }
+            </script>
+        </div>
+        <div class="rightcolumn">
+            <div class="canvas" id="canvas1">
+                <div id="sortable">
+                    <div class="canvas_element ui-state-disabled" name="start">Start</div>
+                    <div class="canvas_element" name="available space">available space</div>
+                    <div class="canvas_element ui-state-disabled" name="end">End</div>
                 </div>
-                <div class="library_element">
-                    Some text 2
-                </div>
-                <div class="library_element">
-                    Some text 3
-                </div>
-            </div>
-            <button class="accordion">Amdocs Special</button>
-            <div class="panel">
-                <div class="library_element">
-                    Some text 1
-                </div>
-                <div class="library_element">
-                    Some text 2
-                </div>
-                <div class="library_element">
-                    Some text 3
-                </div>
+                <script>
+                    $(document).ready(function(){
+                        $("p").click(function(){
+                            /*$("#sortable").each*/
+                            let order = "";
+                            $( "div.canvas_element" ).each(function() {
+                                order += $( this ).attr("name") + "\n";
+                            });
+                            alert(order);
+                        });
+                    });
+                </script>
+                <p>Click on this paragraph.</p>
             </div>
         </div>
-
         <script>
-            let acc = document.getElementsByClassName("accordion");
-            let i;
-
-            for (i = 0; i < acc.length; i++) {
-                acc[i].addEventListener("click", function () {
-                    this.classList.toggle("active");
-                    let panel = this.nextElementSibling;
-                    if (panel.style.maxHeight) {
-                        panel.style.maxHeight = null;
-                    } else {
-                        panel.style.maxHeight = panel.scrollHeight + "px";
-                    }
+            $(function () {
+                $("#accordion").accordion({
+                    collapsible: true
                 });
-            }
+            });
+        </script>
+        <script>
+            $(function () {
+                $("#sortable").sortable({
+                    items: "div:not(.ui-state-disabled)"
+                });
+                $("#sortable div, .library_element,.canvas_element").disableSelection();
+            });
+        </script>
+        <script>
+            $(function () {
+                $("#sortable").sortable({
+                    revert: true
+                });
+                $("div.library_element").draggable({
+                    connectToSortable: "#sortable",
+                    helper: function () {
+                        let returned = $(this).clone();
+                        returned.switchClass("library_element", "canvas_element");
+                        //TODO take from db the info for the canvas element
+                        return returned;
+                    },
+                    revert: "invalid",
+                });
+                $("ul, li").disableSelection();
+            });
         </script>
     </div>
-    <div class="rightcolumn">
-        <div class="canvas" id="canvas1">
-            <div id="sortable">
-                <div class="canvas_element ui-state-disabled" name="start">Start</div>
-                <div class="canvas_element" name="available space">available space</div>
-                <div class="canvas_element ui-state-disabled" name="end">End</div>
-            </div>
-            <script>
-                $(document).ready(function(){
-                    $("p").click(function(){
-                        /*$("#sortable").each*/
-                        let order = "";
-                        $( "div.canvas_element" ).each(function() {
-                            order += $( this ).attr("name") + "\n";
-                        });
-                        alert(order);
-                    });
-                });
-            </script>
-            <p>Click on this paragraph.</p>
-        </div>
-    </div>
-    <script>
-        $(function () {
-            $("#accordion").accordion({
-                collapsible: true
-            });
-        });
-    </script>
-    <script>
-        $(function () {
-            $("#sortable").sortable({
-                items: "div:not(.ui-state-disabled)"
-            });
-            $("#sortable div, .library_element,.canvas_element").disableSelection();
-        });
-    </script>
-    <script>
-        $(function () {
-            $("#sortable").sortable({
-                revert: true
-            });
-            $("div.library_element").draggable({
-                connectToSortable: "#sortable",
-                helper: function () {
-                    let returned = $(this).clone();
-                    returned.switchClass("library_element", "canvas_element");
-                    //TODO take from db the info for the canvas element
-                    return returned;
-                },
-                revert: "invalid",
-            });
-            $("ul, li").disableSelection();
-        });
-    </script>
-</div>
 
-<div class="footer">
-    <h2>Footer</h2>
+    <?php
+    /* @var $this yii\web\View */
+    ?>
+
 </div>
-<?php
-/* @var $this yii\web\View */
-?>
-</body>
-</html>

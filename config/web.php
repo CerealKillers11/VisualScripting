@@ -53,6 +53,8 @@ $config = [
         */
     ],
     'params' => $params,
+    'name' => 'Amdocs Project',
+    'defaultRoute' => 'amdocs-app/index'
 ];
 
 if (YII_ENV_DEV) {
