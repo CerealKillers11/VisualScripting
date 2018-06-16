@@ -23,17 +23,6 @@ $this->registerCssFile($pub3[1], ['depends' => ['yii\web\JqueryAsset']]);
     <script src="js/jquery.js"></script>
     <script src="js/jquery-ui.min.js"></script>
     <style>
-        ul {
-            list-style-type: none;
-            padding: 0;
-            margin: 0 0 10px;
-        }
-
-        li {
-            margin: 5px;
-            padding: 5px;
-            width: 200px;
-        }
 
         #sortable1, #sortable2 {
             list-style-type: none;
@@ -160,7 +149,7 @@ $this->registerCssFile($pub3[1], ['depends' => ['yii\web\JqueryAsset']]);
                 width: 100%;
             }
         }
-s
+
         .accordion {
             background-color: #eee;
             color: #444;
@@ -182,11 +171,8 @@ s
             margin-left: 5px;
         }
 
-        .active:after {
-            content: "\2212";
-        }
 
-        .active, .accordion:hover {
+        .accordion:hover {
             background-color: #ccc;
         }
 
