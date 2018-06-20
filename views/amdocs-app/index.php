@@ -1,7 +1,8 @@
 <?php
 /* @var $this yii\web\View */
 
-use yii\widgets\Menu;
+use \yii\bootstrap\Html;
+use \app\models\CommandsForm;
 
 $pub1 = Yii::$app->assetManager->publish(__DIR__ . '/js/jquery.js');
 $this->registerJsFile($pub1[1], ['depends' => ['yii\web\JqueryAsset']]);
@@ -210,18 +211,35 @@ $this->registerCssFile($pub3[1], ['depends' => ['yii\web\JqueryAsset']]);
         }
     </style>
 
+    <div class="row">
+        <div class="col-lg-5">
 
-<!--    <div class="topnav">-->
-<!--        <a href="#">Home</a>-->
-<!--        <a href="#">Build</a>-->
-<!--        <a href="#">Save</a>-->
-<!--        <a href="#">Add Command</a>-->
-<!--        <a href="#">FAQ</a>-->
-<!--        <a href="#"  style="float:right">Log out</a>-->
-<!--    </div>-->
+            <?php $form = new CommandsForm();
+            ?>
+
+            <?php //Place hardcoded values first ?>
+            <?= $form->prefixes = join(',', array('sudo')); ?>
+
+            <?= $form->names = join(',', array('mkdir')); ?>
+
+            <?= $form->flags = join(',', array()); ?>
+
+            <?= $form->params = join(',', array('AmdocsProjectFolder')); ?>
+
+
+            <div class="form-group">
+                <?= Html::submitButton('Build', ['class' => 'btn btn-primary', 'name' => 'commands-button']) ?>
+            </div>
+
+        </div>
+    </div>
 
     <div class="row">
         <div class="leftcolumn">
+            <?php
+                Html::button()
+            ?>
+
             <div class="library_menu">
                 <button class="accordion">Basic Commands</button>
                 <div class="panel">

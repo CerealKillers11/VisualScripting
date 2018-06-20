@@ -7,6 +7,7 @@ use Yii;
 /**
  * This is the model class for table "users".
  * Helpful when we check login and password.
+ * Represents our user db
  *
  * @property string $id
  * @property string $username

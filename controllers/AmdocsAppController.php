@@ -24,7 +24,36 @@ class AmdocsAppController extends \yii\web\Controller
 
     public function actionBuild()
     {
-        return $this->render('build');
+        /** We want to transfer the full script to be approved by user before is is executed. */
+        //TO-DO: Add logic when there is no commands at all
+        $request = Yii::$app->request;
+
+        $prefixes = $request->post('prefixes'); //Per command, like sudo, etc.
+        $names = $request->post('names');    //Actual commands
+        $flags = $request->post('flags');       //Flags per command, like -l or --default
+        $params = $request->post('params');     //Params per command, like input files, etc.
+
+        $full_command = '';
+
+        for($i=0;$i<count($prefixes);$i++){
+            $prefix = $prefixes[$i];
+            $name= $names[$i];
+            $params_not_parsed = $params[$i];
+            $flags_not_parsed = $flags[$i];
+
+
+            //Parsing params
+            $delimiter = array("$");
+            $space = array(" ");
+
+            $params = str_replace($delimiter,$space,$params_not_parsed);
+            $flags = str_replace($delimiter,$space,$flags_not_parsed);
+
+            $command = $prefix . $name . $flags . $params . "\n"; // Like "sudo rm -rf ProjectFolder"
+
+            $full_command .= $command;
+        }
+        return $this->render('build',array('script' => $full_command));
     }
 
     public function actionCommand()
