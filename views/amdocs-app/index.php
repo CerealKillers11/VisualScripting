@@ -2,7 +2,9 @@
 /* @var $this yii\web\View */
 
 use \yii\bootstrap\Html;
-use \app\models\CommandsForm;
+use \app\models\BuildForm;
+use yii\bootstrap\ActiveForm;
+
 
 $pub1 = Yii::$app->assetManager->publish(__DIR__ . '/js/jquery.js');
 $this->registerJsFile($pub1[1], ['depends' => ['yii\web\JqueryAsset']]);
@@ -214,31 +216,28 @@ $this->registerCssFile($pub3[1], ['depends' => ['yii\web\JqueryAsset']]);
     <div class="row">
         <div class="col-lg-5">
 
-            <?php $form = new CommandsForm();
-            ?>
+            <?php $form = ActiveForm::begin(['id' => 'build-form',
+                                             'fieldConfig' => ['enableLabel'=>false], // Do not show the labels in view
+                                             'action' => 'index.php?r=amdocs-app%2Fbuild', //TO-DO pretty urls
+                                             'method' => 'post',
+                                            ]); ?>
 
-            <?php //Place hardcoded values first ?>
-            <?= $form->prefixes = join(',', array('sudo')); ?>
-
-            <?= $form->names = join(',', array('mkdir')); ?>
-
-            <?= $form->flags = join(',', array()); ?>
-
-            <?= $form->params = join(',', array('AmdocsProjectFolder')); ?>
-
+            <?= $form->field($model, 'prefixes')->hiddenInput(['value' => 'sudo']); ?>
+            <?= $form->field($model, 'names')->hiddenInput(['value' => 'mkdir']); ?>
+            <?= $form->field($model, 'flags')->hiddenInput(['value' => '-rf']); ?>
+            <?= $form->field($model, 'params')->hiddenInput(['value' => 'AmdocsProjectFolder']); ?>
 
             <div class="form-group">
-                <?= Html::submitButton('Build', ['class' => 'btn btn-primary', 'name' => 'commands-button']) ?>
+                <?= Html::submitButton('Build', ['class' => 'btn btn-primary', 'name' => 'build-button']) ?>
             </div>
 
+            <?php ActiveForm::end(); ?>
         </div>
     </div>
 
+
     <div class="row">
         <div class="leftcolumn">
-            <?php
-                Html::button()
-            ?>
 
             <div class="library_menu">
                 <button class="accordion">Basic Commands</button>
