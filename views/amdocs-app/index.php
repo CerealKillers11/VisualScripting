@@ -254,40 +254,15 @@ $this->registerCssFile($pub3[1], ['depends' => ['yii\web\JqueryAsset']]);
             <div class="library_menu">
                 <button class="accordion">Basic Commands</button>
                 <div class="panel">
-                    <div class="library_element" name="le1"> <!--draggable="true" ondragstart="drag(event)"-->
-                        Some text 1
-                    </div>
-                    <div class="library_element" name="le2">
-                        Some text 2
-                    </div>
-                    <div class="library_element" name="le3">
-                        Some text 3
-                    </div>
-
-                </div>
-                <button class="accordion">My Commands</button>
-                <div class="panel" >
-                    <div class="library_element">
-                        Some text 1
-                    </div>
-                    <div class="library_element">
-                        Some text 2
-                    </div>
-                    <div class="library_element">
-                        Some text 3
-                    </div>
-                </div>
-                <button class="accordion">Amdocs Special</button>
-                <div class="panel">
-                    <div class="library_element">
-                        Some text 1
-                    </div>
-                    <div class="library_element">
-                        Some text 2
-                    </div>
-                    <div class="library_element">
-                        Some text 3
-                    </div>
+                    <?php foreach ($commands as $command): ?>
+                        <div class="library_element" name=
+                        <?= Html::encode
+                        ("{$command->ID} {$command->Name} {$command->ABR}
+                                 {$command->Parameters}{$command->Flags}{$command->Code}")
+                        ?>:>
+                            <?=Html::encode("{$command->Name}"); ?>
+                        </div>
+                    <?php endforeach; ?>
                 </div>
             </div>
 
@@ -312,25 +287,24 @@ $this->registerCssFile($pub3[1], ['depends' => ['yii\web\JqueryAsset']]);
             <div class="canvas" id="canvas1">
                 <div id="sortable">
                     <div class="canvas_element ui-state-disabled" name="start">Start</div>
-                    <div class="canvas_element" name="sudo rm -rf AmdocsProjectFolder">sudo</div>
-                    <div class="canvas_element" name="find -name 'Adam' ../../users">find</div>
-                    <div class="canvas_element" name="grep -l 'Max' MyFile.txt">grep</div>
-                    <div class="canvas_element" name="mkdir NewFolder">mkdir</div>
+                    <div class="canvas_element"
+                         id="free_space" name="free_space">--add commands here--</div>
                     <div class="canvas_element ui-state-disabled" name="end">End</div>
+
                 </div>
-                <script>
-                    $(document).ready(function(){
-                        $("p").click(function(){
-                            /*$("#sortable").each*/
-                            let order = "";
-                            $( "div.canvas_element" ).each(function() {
-                                order += $( this ).attr("name") + "\n";
-                            });
-                            alert(order);
-                        });
-                    });
-                </script>
-                <p>Click on this paragraph.</p>
+<!--                <script>-->
+<!--                    $(document).ready(function(){-->
+<!--                        $("p").click(function(){-->
+<!--                            /*$("#sortable").each*/-->
+<!--                            let order = "";-->
+<!--                            $( "div.canvas_element" ).each(function() {-->
+<!--                                order += $( this ).attr("name") + "\n";-->
+<!--                            });-->
+<!--                            alert(order);-->
+<!--                        });-->
+<!--                    });-->
+<!--                </script>-->
+<!--                <p>Click on this paragraph.</p>-->
             </div>
         </div>
         <script>
@@ -358,7 +332,10 @@ $this->registerCssFile($pub3[1], ['depends' => ['yii\web\JqueryAsset']]);
                     helper: function () {
                         let returned = $(this).clone();
                         returned.switchClass("library_element", "canvas_element");
-                        //TODO take from db the info for the canvas element
+                        // let free_space = document.getElementById('free_space');
+                        // if(free_space != null) {
+                        //     free_space.remove();
+                        // }
                         return returned;
                     },
                     revert: "invalid",

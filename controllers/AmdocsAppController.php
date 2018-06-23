@@ -10,6 +10,7 @@ use yii\web\Controller;
 use yii\web\Response;
 use yii\filters\VerbFilter;
 use app\models\LoginForm;
+use app\models\Commands;
 use app\models\ContactForm;
 
 class AmdocsAppController extends \yii\web\Controller
@@ -42,7 +43,6 @@ class AmdocsAppController extends \yii\web\Controller
         $names = explode(",",$names_str);
         $flags = explode(",",$flags_str);
         $params = explode(",",$params_str);
-
 
         $full_command = '';
 
@@ -90,7 +90,11 @@ class AmdocsAppController extends \yii\web\Controller
             return $this->actionLogin();
         }
         $model = new InputFlowForm();
-        return $this->render('index', ['model' => $model]);
+
+        $query = Commands::find();
+        $commands=$query->orderBy('ID')->all();
+
+        return $this->render('index', ['model' => $model, 'commands' => $commands ]);
     }
 
     public function actionLogin()
