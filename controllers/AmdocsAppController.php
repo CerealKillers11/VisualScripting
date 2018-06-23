@@ -3,6 +3,7 @@
 namespace app\controllers;
 
 use app\models\BuildForm;
+use app\models\InputFlowForm;
 use Yii;
 use yii\filters\AccessControl;
 use yii\web\Controller;
@@ -26,7 +27,9 @@ class AmdocsAppController extends \yii\web\Controller
     public function actionBuild()
     {
         $form = Yii::$app->request->post('BuildForm');
-//        $form = $form['prefixes'];
+        $test = Yii::$app->request->post('InputFlowForm');
+
+        $kuku = $test['flow'];
 
         /** We want to transfer the full script to be approved by user before is is executed. */
 
@@ -63,7 +66,7 @@ class AmdocsAppController extends \yii\web\Controller
         }
 
 
-        return $this->render('build',['script' => $full_command]);
+        return $this->render('build',['script' => $kuku]);
     }
 
     public function actionCommand()
@@ -86,7 +89,7 @@ class AmdocsAppController extends \yii\web\Controller
         if (Yii::$app->user->isGuest) {
             return $this->actionLogin();
         }
-        $model = new BuildForm();
+        $model = new InputFlowForm();
         return $this->render('index', ['model' => $model]);
     }
 

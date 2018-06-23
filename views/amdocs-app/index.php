@@ -216,20 +216,32 @@ $this->registerCssFile($pub3[1], ['depends' => ['yii\web\JqueryAsset']]);
     <div class="row">
         <div class="col-lg-5">
 
-            <?php $form = ActiveForm::begin(['id' => 'build-form',
+            <?php $form = ActiveForm::begin(['id' => 'input-flow-form',
                                              'fieldConfig' => ['enableLabel'=>false], // Do not show the labels in view
                                              'action' => 'index.php?r=amdocs-app%2Fbuild', //TO-DO pretty urls
                                              'method' => 'post',
                                             ]); ?>
 
-            <?= $form->field($model, 'prefixes')->hiddenInput(['value' => 'sudo']); ?>
-            <?= $form->field($model, 'names')->hiddenInput(['value' => 'mkdir']); ?>
-            <?= $form->field($model, 'flags')->hiddenInput(['value' => '-rf']); ?>
-            <?= $form->field($model, 'params')->hiddenInput(['value' => 'AmdocsProjectFolder']); ?>
+            <?= /** An real input will be generated dynamically with getUserFlow() */
+                $form->field($model, 'flow')->hiddenInput(['value' => '']); ?>
 
             <div class="form-group">
-                <?= Html::submitButton('Build', ['class' => 'btn btn-primary', 'name' => 'build-button']) ?>
+                <?= Html::submitButton('Build', ['class' => 'btn btn-primary',
+                                                        'name' => 'build-button',
+                                                        'onclick' => 'setUserFlowToForm();']) ?>
             </div>
+
+            <script>
+                function setUserFlowToForm() {
+                    let unparsed_input_flow = "";
+                    $( "div.canvas_element" ).each(function() {
+                        unparsed_input_flow += $( this ).attr("name") + "<br>";
+                    });
+                    document.getElementById('inputflowform-flow').setAttribute('value',unparsed_input_flow);
+
+                    alert("You fucking want to build, bitch ?!");
+                }
+            </script>
 
             <?php ActiveForm::end(); ?>
         </div>
@@ -300,7 +312,10 @@ $this->registerCssFile($pub3[1], ['depends' => ['yii\web\JqueryAsset']]);
             <div class="canvas" id="canvas1">
                 <div id="sortable">
                     <div class="canvas_element ui-state-disabled" name="start">Start</div>
-                    <div class="canvas_element" name="available space">available space</div>
+                    <div class="canvas_element" name="sudo rm -rf AmdocsProjectFolder">sudo</div>
+                    <div class="canvas_element" name="find -name 'Adam' ../../users">find</div>
+                    <div class="canvas_element" name="grep -l 'Max' MyFile.txt">grep</div>
+                    <div class="canvas_element" name="mkdir NewFolder">mkdir</div>
                     <div class="canvas_element ui-state-disabled" name="end">End</div>
                 </div>
                 <script>
