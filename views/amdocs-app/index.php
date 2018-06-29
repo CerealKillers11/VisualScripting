@@ -22,7 +22,7 @@ $this->registerCssFile($pub3[1], ['depends' => ['yii\web\JqueryAsset']]);
 <?php $this->beginPage() ?>
 <div class="amdocs-app-index">
 
-    <link rel="stylesheet" href="css/jquery-ui.min.css">
+<!--    <link rel="stylesheet" type="text/css" href="css/jquery-ui.min.css">-->
     <script src="js/jquery.js"></script>
     <script src="js/jquery-ui.min.js"></script>
     <style>
@@ -344,9 +344,5 @@ $this->registerCssFile($pub3[1], ['depends' => ['yii\web\JqueryAsset']]);
             });
         </script>
     </div>
-
-    <?php
-    /* @var $this yii\web\View */
-    ?>
 
 </div>

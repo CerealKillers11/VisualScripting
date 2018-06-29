@@ -69,9 +69,33 @@ class AmdocsAppController extends \yii\web\Controller
         return $this->render('build',['script' => $kuku]);
     }
 
-    public function actionCommand()
+    public function actionAddCommand()
     {
-        return $this->render('command');
+
+        $form = Yii::$app->request->post('Commands');
+        if($form != null) {
+            $model = new Commands();
+
+            $model->Name = $form['Name'];
+            $model->ABR = $form['ABR'];
+            $model->Parameters = $form['Parameters'];
+            $model->Flags = $form['Flags'];
+            $model->Code = $form['Code'];
+
+            /** Assign a proper new ID*/
+            $size = count(Commands::find()->all());
+            $model->ID  = strval($size+1);
+
+            if($model->validate()){
+                $model->save();
+                Yii::$app->session->setFlash('commandsSubmitted');
+            }
+            else{
+                Yii::$app->session->setFlash('validationFailed');
+            }
+        }
+        $form = new Commands();
+        return $this->render('add-command', ['model'=>$form]);
     }
 
     public function actionFaq()

@@ -39,8 +39,10 @@ AppAsset::register($this);
         'options' => ['class' => 'navbar-nav navbar-right'],
         'items' => [
             ['label' => 'Home', 'url' => ['/amdocs-app/index']],
+            ['label' => 'Add command', 'url' => ['/amdocs-app/add-command']],
             ['label' => 'About', 'url' => ['/amdocs-app/about']],
             ['label' => 'Contact', 'url' => ['/amdocs-app/contact']],
+
             Yii::$app->user->isGuest ? (
                 ['label' => 'Login', 'url' => ['/amdocs-app/login']]
             ) : (
