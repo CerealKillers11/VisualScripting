@@ -254,7 +254,31 @@ $this->registerCssFile($pub3[1], ['depends' => ['yii\web\JqueryAsset']]);
             <div class="library_menu">
                 <button class="accordion">Basic Commands</button>
                 <div class="panel">
-                    <?php foreach ($commands as $command): ?>
+                    <?php foreach ($basic_commands as $command): ?>
+                        <div class="library_element" name=
+                        <?= Html::encode
+                        ("{$command->ID} {$command->Name} {$command->ABR}
+                                 {$command->Parameters}{$command->Flags}{$command->Code}")
+                        ?>:>
+                            <?=Html::encode("{$command->Name}"); ?>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+                <button class="accordion">Amdocs Commands</button>
+                <div class="panel">
+                    <?php foreach ($amdocs_commands as $command): ?>
+                        <div class="library_element" name=
+                        <?= Html::encode
+                        ("{$command->ID} {$command->Name} {$command->ABR}
+                                 {$command->Parameters}{$command->Flags}{$command->Code}")
+                        ?>:>
+                            <?=Html::encode("{$command->Name}"); ?>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+                <button class="accordion">User Commands</button>
+                <div class="panel">
+                    <?php foreach ($user_commands as $command): ?>
                         <div class="library_element" name=
                         <?= Html::encode
                         ("{$command->ID} {$command->Name} {$command->ABR}

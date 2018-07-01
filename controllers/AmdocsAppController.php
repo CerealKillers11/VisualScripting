@@ -4,6 +4,7 @@ namespace app\controllers;
 
 use app\models\BuildForm;
 use app\models\InputFlowForm;
+use app\models\Users;
 use Yii;
 use yii\filters\AccessControl;
 use yii\web\Controller;
@@ -76,11 +77,13 @@ class AmdocsAppController extends \yii\web\Controller
         if($form != null) {
             $model = new Commands();
 
+
             $model->Name = $form['Name'];
             $model->ABR = $form['ABR'];
             $model->Parameters = $form['Parameters'];
             $model->Flags = $form['Flags'];
             $model->Code = $form['Code'];
+            $model->username = $form['username'];
 
             /** Assign a proper new ID*/
             $size = count(Commands::find()->all());
@@ -115,10 +118,19 @@ class AmdocsAppController extends \yii\web\Controller
         }
         $model = new InputFlowForm();
 
-        $query = Commands::find();
-        $commands=$query->orderBy('ID')->all();
+        $basic_commands = Commands::find()->where(['username' => 'basic'])->orderBy('ID')->all();
+        $amdocs_commands = Commands::find()->where(['username' => 'amdocs'])->orderBy('ID')->all();
+        $user_commands = Commands::find()->
+            where(['username' => Users::findOne(Yii::$app->user->identity->getId())->username])->
+            orderBy('ID')->all();
 
-        return $this->render('index', ['model' => $model, 'commands' => $commands ]);
+
+
+
+        return $this->render('index', ['model' => $model,
+                                            'basic_commands' => $basic_commands,
+                                            'amdocs_commands' => $amdocs_commands,
+                                            'user_commands' => $user_commands ]);
     }
 
     public function actionLogin()

@@ -3,7 +3,7 @@
 
 use yii\bootstrap\ActiveForm;
 use \yii\bootstrap\Html;
-
+use \app\models\Users;
 
 ?>
 <div class="amdocs-app/add-command" >
@@ -43,16 +43,37 @@ use \yii\bootstrap\Html;
 
             <?= $form->field($model, 'Code')->textarea(['rows' => 6]) ?>
 
+            <?=
+            /** An real input can be changed to 'amdocs' (public command), based on checkbox. username - is default.*/
+            $form->field($model, 'username')->hiddenInput(['value' =>
+             Users::findOne(Yii::$app->user->identity->getId())->username])->label(false);
+            ?>
+
+
+            <?= Html::checkbox('privateCommandCheckBox',[],['label' => 'Private (visible only for me)']) ?>
+
+            <br>
+            <br>
+
             <div class="form-group">
                 <?= Html::submitButton('Add command', ['class' => 'btn btn-primary',
                                                                 'action' => 'index.php?r=amdocs-app%2Fadd-command',
                                                                 'name' => 'commands-button',
                                                                 'method' => 'post',
-                                                                'onclick' => 'confirmAddCommand();']) ?>
+                                                                'onclick' => 'return confirmAddCommand();'
+                                                                ]) ?>
             </div>
             <script>
                 function confirmAddCommand() {
-                    confirm('Do you want to add this command?')
+                    let checkbox = document.getElementsByName('privateCommandCheckBox')[0];
+
+                    if(checkbox.checked){
+                        document.getElementById('commands-username').setAttribute('value','amdocs');
+                        return confirm('Do you want to add this private command?')
+                    }
+                    else{
+                        return confirm('Do you want to add this public command?')
+                    }
                 }
             </script>
 

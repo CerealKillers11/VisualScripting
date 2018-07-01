@@ -8,11 +8,14 @@ use Yii;
  * This is the model class for table "commands".
  *
  * @property string $ID
+ * @property string $username
  * @property string $Name
  * @property string $ABR
  * @property string $Parameters
  * @property string $Flags
  * @property string $Code
+ *
+ * @property Users $username0
  */
 class Commands extends \yii\db\ActiveRecord
 {
@@ -30,11 +33,13 @@ class Commands extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['ID', 'Name', 'ABR', 'Parameters', 'Flags', 'Code'], 'required'],
+            [['ID', 'username', 'Name', 'ABR', 'Parameters', 'Flags', 'Code'], 'required'],
             [['Name', 'Parameters', 'Flags', 'Code'], 'string'],
             [['ID'], 'string', 'max' => 12],
+            [['username'], 'string', 'max' => 50],
             [['ABR'], 'string', 'max' => 5],
             [['ID'], 'unique'],
+            [['username'], 'exist', 'skipOnError' => true, 'targetClass' => Users::className(), 'targetAttribute' => ['username' => 'username']],
         ];
     }
 
@@ -45,11 +50,20 @@ class Commands extends \yii\db\ActiveRecord
     {
         return [
             'ID' => 'ID',
+            'username' => 'Username',
             'Name' => 'Name',
             'ABR' => 'Abr',
             'Parameters' => 'Parameters',
             'Flags' => 'Flags',
             'Code' => 'Code',
         ];
+    }
+
+    /**
+     * @return \yii\db\ActiveQuery
+     */
+    public function getUsername0()
+    {
+        return $this->hasOne(Users::className(), ['username' => 'username']);
     }
 }

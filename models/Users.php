@@ -51,4 +51,6 @@ class Users extends \yii\db\ActiveRecord
             'accessToken' => 'Access Token',
         ];
     }
+
+    public function getUsername() { return $this->username; }
 }
