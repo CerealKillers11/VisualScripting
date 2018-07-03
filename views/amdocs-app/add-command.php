@@ -43,6 +43,8 @@ use \app\models\Users;
 
             <?= $form->field($model, 'Code')->textarea(['rows' => 6]) ?>
 
+            <?= $form->field($model, 'Description')->textarea(['rows' => 6]) ?>
+
             <?=
             /** An real input can be changed to 'amdocs' (public command), based on checkbox. username - is default.*/
             $form->field($model, 'username')->hiddenInput(['value' =>
@@ -68,10 +70,10 @@ use \app\models\Users;
                     let checkbox = document.getElementsByName('privateCommandCheckBox')[0];
 
                     if(checkbox.checked){
-                        document.getElementById('commands-username').setAttribute('value','amdocs');
                         return confirm('Do you want to add this private command?')
                     }
                     else{
+                        document.getElementById('commands-username').setAttribute('value','amdocs');
                         return confirm('Do you want to add this public command?')
                     }
                 }

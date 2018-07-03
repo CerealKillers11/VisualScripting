@@ -66,8 +66,9 @@ class AmdocsAppController extends \yii\web\Controller
             $full_command .= $command;
         }
 
+        $model = new Commands(); //For saving the script
 
-        return $this->render('build',['script' => $kuku]);
+        return $this->render('build',['model'=> $model,'script' => $kuku]);
     }
 
     public function actionAddCommand()
@@ -84,6 +85,8 @@ class AmdocsAppController extends \yii\web\Controller
             $model->Flags = $form['Flags'];
             $model->Code = $form['Code'];
             $model->username = $form['username'];
+            $model->Description = $form['Description'];
+
 
             /** Assign a proper new ID*/
             $size = count(Commands::find()->all());
@@ -124,9 +127,6 @@ class AmdocsAppController extends \yii\web\Controller
             where(['username' => Users::findOne(Yii::$app->user->identity->getId())->username])->
             orderBy('ID')->all();
 
-
-
-
         return $this->render('index', ['model' => $model,
                                             'basic_commands' => $basic_commands,
                                             'amdocs_commands' => $amdocs_commands,
@@ -159,6 +159,30 @@ class AmdocsAppController extends \yii\web\Controller
 
     public function actionSave()
     {
+        $form = Yii::$app->request->post('Commands');
+        if($form != null) {
+            $model = new Commands();
+
+            $model->Name = $form['Name'];
+            $model->ABR = $form['ABR'];
+            $model->Parameters = $form['Parameters'];
+            $model->Flags = $form['Flags'];
+            $model->Code = $form['Code'];
+            $model->username = $form['username'];
+            $model->Description = $form['Description'];
+
+            /** Assign a proper new ID*/
+            $size = count(Commands::find()->all());
+            $model->ID  = strval($size+1);
+
+            if($model->validate()){
+                $model->save();
+                Yii::$app->session->setFlash('scriptSubmitted');
+            }
+            else{
+                Yii::$app->session->setFlash('scriptValidationFailed');
+            }
+        }
         return $this->render('save');
     }
 

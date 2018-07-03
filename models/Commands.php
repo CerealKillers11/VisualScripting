@@ -14,6 +14,7 @@ use Yii;
  * @property string $Parameters
  * @property string $Flags
  * @property string $Code
+ * @property string $Description
  *
  * @property Users $username0
  */
@@ -33,8 +34,8 @@ class Commands extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['ID', 'username', 'Name', 'ABR', 'Parameters', 'Flags', 'Code'], 'required'],
-            [['Name', 'Parameters', 'Flags', 'Code'], 'string'],
+            [['ID', 'username', 'Name', 'ABR', 'Code'], 'required'],
+            [['Name', 'Parameters', 'Flags', 'Code', 'Description'], 'string'],
             [['ID'], 'string', 'max' => 12],
             [['username'], 'string', 'max' => 50],
             [['ABR'], 'string', 'max' => 5],
@@ -56,6 +57,7 @@ class Commands extends \yii\db\ActiveRecord
             'Parameters' => 'Parameters',
             'Flags' => 'Flags',
             'Code' => 'Code',
+            'Description' => 'Description',
         ];
     }
 
