@@ -2,7 +2,6 @@
 /* @var $this yii\web\View */
 
 use \yii\bootstrap\Html;
-use \app\models\BuildForm;
 use yii\bootstrap\ActiveForm;
 
 
@@ -14,8 +13,22 @@ $pub2 = Yii::$app->assetManager->publish(__DIR__ . '/js/jquery-ui.min.js');
 $this->registerJsFile($pub2[1], ['depends' => ['yii\web\JqueryAsset']]);
 
 
-$pub3 = Yii::$app->assetManager->publish(__DIR__ . '/css/jquery-ui.min.css');
-$this->registerCssFile($pub3[1], ['depends' => ['yii\web\JqueryAsset']]);
+//$pub3 = Yii::$app->assetManager->publish(__DIR__ . '/css/jquery-ui.min.css');
+//$this->registerCssFile($pub3[1], ['depends' => ['yii\web\JqueryAsset']]);
+
+
+$pub3 = Yii::$app->assetManager->publish(__DIR__ . '/js/lodash.js');
+$this->registerJsFile($pub3[1], ['depends' => ['yii\web\JqueryAsset']]);
+
+
+$pub4 = Yii::$app->assetManager->publish(__DIR__ . '/js/backbone.js');
+$this->registerJsFile($pub4[1], ['depends' => ['yii\web\JqueryAsset']]);
+
+$pub5 = Yii::$app->assetManager->publish(__DIR__ . '/js/joint.js');
+$this->registerJsFile($pub5[1], ['depends' => ['yii\web\JqueryAsset']]);
+
+$pub6 = Yii::$app->assetManager->publish(__DIR__ . '/css/joint.css');
+$this->registerCssFile($pub6[1], ['depends' => ['yii\web\JqueryAsset']]);
 
 ?>
 
@@ -25,6 +38,13 @@ $this->registerCssFile($pub3[1], ['depends' => ['yii\web\JqueryAsset']]);
 <!--    <link rel="stylesheet" type="text/css" href="css/jquery-ui.min.css">-->
     <script src="js/jquery.js"></script>
     <script src="js/jquery-ui.min.js"></script>
+    <script src="js/lodash.js"></script>
+    <script src="js/backbone.js"></script>
+    <script src="js/joint.js"></script>
+
+    <link rel="stylesheet" type="text/css" href="css/joint.css" />
+
+
     <style>
 
         #sortable1, #sortable2 {
@@ -100,13 +120,14 @@ $this->registerCssFile($pub3[1], ['depends' => ['yii\web\JqueryAsset']]);
             width: 75%;
             background-color: #f1f1f1;
             padding-left: 20px;
+            overflow: scroll;
         }
 
         /* Add a left side menu - vertical scroll only */
         .library_menu {
             background-color: white;
             padding: 20px;
-            margin-top: 20px;
+            /*margin-top: 20px;*/
             height: 640px;
             overflow-y: scroll;
 
@@ -214,7 +235,7 @@ $this->registerCssFile($pub3[1], ['depends' => ['yii\web\JqueryAsset']]);
     </style>
 
     <div class="row">
-        <div class="col-lg-5">
+        <div class="col-sm-3">
 
             <?php $form = ActiveForm::begin(['id' => 'input-flow-form',
                                              'fieldConfig' => ['enableLabel'=>false], // Do not show the labels in view
@@ -223,7 +244,7 @@ $this->registerCssFile($pub3[1], ['depends' => ['yii\web\JqueryAsset']]);
                                             ]); ?>
 
             <?= /** An real input will be generated dynamically with getUserFlow() */
-                $form->field($model, 'flow')->hiddenInput(['value' => '']); ?>
+            $form->field($model, 'flow')->hiddenInput(['value' => '']); ?>
 
             <div class="form-group">
                 <?= Html::submitButton('Build', ['class' => 'btn btn-primary',
@@ -245,6 +266,47 @@ $this->registerCssFile($pub3[1], ['depends' => ['yii\web\JqueryAsset']]);
 
             <?php ActiveForm::end(); ?>
         </div>
+        <div class="col-sm-2">
+            <br>
+            <?= Html::button('Zoom Reset', ['id' => 'zoom-reset-button',
+                'class' => 'btn btn-primary']); ?>
+        </div>
+        <div class="col-sm-1">
+            <br>
+            <?= Html::button('Zoom In', ['id' => 'zoom-in-button',
+                'class' => 'btn btn-primary']); ?>
+        </div>
+        <div class="col-sm-1">
+            <br>
+            <?= Html::button('Zoom Out', ['id' => 'zoom-out-button',
+                'class' => 'btn btn-primary']); ?>
+        </div>
+
+
+        <script>
+            $(document).ready(function () {
+                $("#zoom-in-button").click(function (e) {
+                    e.preventDefault();
+                    paper_scale+=0.1;
+                    paper.scale(paper_scale, paper_scale);
+                });
+            });
+            $(document).ready(function () {
+                $("#zoom-out-button").click(function (e) {
+                    e.preventDefault();
+                    paper_scale-=0.1;
+                    paper.scale(paper_scale, paper_scale);
+                });
+            });
+            $(document).ready(function () {
+                $("#zoom-reset-button").click(function (e) {
+                    e.preventDefault();
+                    paper_scale=1;
+                    paper.scale(paper_scale, paper_scale);
+                });
+            });
+
+        </script>
     </div>
 
 
@@ -255,7 +317,7 @@ $this->registerCssFile($pub3[1], ['depends' => ['yii\web\JqueryAsset']]);
                 <button class="accordion">Basic Commands</button>
                 <div class="panel">
                     <?php foreach ($basic_commands as $command): ?>
-                        <div class="library_element" name=
+                        <div class="library_element" draggable="true" name=
                         <?= Html::encode
                         ("{$command->ID} {$command->Name} {$command->ABR}
                                  {$command->Parameters}{$command->Flags}{$command->Code}")
@@ -307,15 +369,77 @@ $this->registerCssFile($pub3[1], ['depends' => ['yii\web\JqueryAsset']]);
                 }
             </script>
         </div>
-        <div class="rightcolumn">
-            <div class="canvas" id="canvas1">
-                <div id="sortable">
-                    <div class="canvas_element ui-state-disabled" name="start">Start</div>
-                    <div class="canvas_element"
-                         id="free_space" name="free_space">--add commands here--</div>
-                    <div class="canvas_element ui-state-disabled" name="end">End</div>
+        <div class="rightcolumn" id="paper_holder" style="height: 640px;">
+            <div id="div_paper" ></div>
+        </div>
+        <script type="text/javascript">
 
-                </div>
+            document.addEventListener("dragstart", function(event) {
+                if ( event.target.className === "library_element" ) {
+                    event.target.style.border = "3px dotted red";
+                    let paper_holder = document.getElementById('paper_holder');
+                    paper_holder.style.border = "3px dotted green";
+                }
+            });
+
+            document.addEventListener("dragend", function(event) {
+                if ( event.target.className === "library_element" ) {
+                    event.target.style.border = "";
+                    let paper_holder = document.getElementById('paper_holder');
+                    paper_holder.style.border = "";
+                }
+            });
+
+            graph = new joint.dia.Graph;
+
+            paper = new joint.dia.Paper({
+                el: document.getElementById('div_paper'),
+                model: graph,
+                width: 2000,
+                height: 2000,
+                gridSize: 10,
+                drawGrid: true,
+            });
+
+            paper_scale = 1;
+
+            let rect = new joint.shapes.standard.Rectangle();
+            rect.position(100, 30);
+            rect.resize(100, 40);
+            rect.attr({
+                body: {
+                    fill: 'blue'
+                },
+                label: {
+                    text: 'Hello',
+                    fill: 'white'
+                }
+            });
+            rect.addTo(graph);
+
+            let rect2 = rect.clone();
+            rect2.translate(300, 0);
+            rect2.attr('label/text', 'World!');
+            rect2.addTo(graph);
+
+            let link = new joint.shapes.standard.Link();
+            link.source(rect);
+            link.target(rect2);
+            link.addTo(graph);
+
+        </script>
+
+
+
+
+<!--            <div class="canvas" id="canvas1">-->
+<!--                <div id="sortable">-->
+<!--                    <div class="canvas_element ui-state-disabled" name="start">Start</div>-->
+<!--                    <div class="canvas_element"-->
+<!--                         id="free_space" name="free_space">--add commands here--</div>-->
+<!--                    <div class="canvas_element ui-state-disabled" name="end">End</div>-->
+<!---->
+<!--                </div>-->
 <!--                <script>-->
 <!--                    $(document).ready(function(){-->
 <!--                        $("p").click(function(){-->
@@ -329,8 +453,8 @@ $this->registerCssFile($pub3[1], ['depends' => ['yii\web\JqueryAsset']]);
 <!--                    });-->
 <!--                </script>-->
 <!--                <p>Click on this paragraph.</p>-->
-            </div>
-        </div>
+<!--            </div>-->
+
         <script>
             $(function () {
                 $("#accordion").accordion({
@@ -338,35 +462,35 @@ $this->registerCssFile($pub3[1], ['depends' => ['yii\web\JqueryAsset']]);
                 });
             });
         </script>
-        <script>
-            $(function () {
-                $("#sortable").sortable({
-                    items: "div:not(.ui-state-disabled)"
-                });
-                $("#sortable div, .library_element,.canvas_element").disableSelection();
-            });
-        </script>
-        <script>
-            $(function () {
-                $("#sortable").sortable({
-                    revert: true
-                });
-                $("div.library_element").draggable({
-                    connectToSortable: "#sortable",
-                    helper: function () {
-                        let returned = $(this).clone();
-                        returned.switchClass("library_element", "canvas_element");
-                        // let free_space = document.getElementById('free_space');
-                        // if(free_space != null) {
-                        //     free_space.remove();
-                        // }
-                        return returned;
-                    },
-                    revert: "invalid",
-                });
-                $("ul, li").disableSelection();
-            });
-        </script>
+<!--        <script>-->
+<!--            $(function () {-->
+<!--                $("#sortable").sortable({-->
+<!--                    items: "div:not(.ui-state-disabled)"-->
+<!--                });-->
+<!--                $("#sortable div, .library_element,.canvas_element").disableSelection();-->
+<!--            });-->
+<!--        </script>-->
+<!--        <script>-->
+<!--            $(function () {-->
+<!--                $("#sortable").sortable({-->
+<!--                    revert: true-->
+<!--                });-->
+<!--                $("div.library_element").draggable({-->
+<!--                    connectToSortable: "#sortable",-->
+<!--                    helper: function () {-->
+<!--                        let returned = $(this).clone();-->
+<!--                        returned.switchClass("library_element", "canvas_element");-->
+<!--                        // let free_space = document.getElementById('free_space');-->
+<!--                        // if(free_space != null) {-->
+<!--                        //     free_space.remove();-->
+<!--                        // }-->
+<!--                        return returned;-->
+<!--                    },-->
+<!--                    revert: "invalid",-->
+<!--                });-->
+<!--                $("ul, li").disableSelection();-->
+<!--            });-->
+<!--        </script>-->
     </div>
 
 </div>
