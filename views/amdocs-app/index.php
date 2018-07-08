@@ -271,11 +271,16 @@ use yii\bootstrap\ActiveForm;
                 <button class="accordion">Basic Commands</button>
                 <div class="panel">
                     <?php foreach ($basic_commands as $command): ?>
-                        <div class="library_element" draggable="true" ondragstart="transferLEData(event);" name=
-                        <?= Html::encode
-                        ("{$command->ID} {$command->Name} {$command->ABR}
-                                 {$command->Parameters}{$command->Flags}{$command->Code}")
-                        ?>:>
+                        <div class="library_element"
+                             draggable="true"
+                             ondragstart="transferCommandData(event);"
+                             command_id="<?= Html::encode("{$command->ID}"); ?>"
+                             command_name="<?= Html::encode("{$command->Name}"); ?>"
+                             command_abr="<?= Html::encode("{$command->ABR}"); ?>"
+                             command_parameters="<?= Html::encode("{$command->Parameters}"); ?>"
+                             command_flags="<?= Html::encode("{$command->Flags}"); ?>"
+                             command_code="<?= Html::encode("{$command->Code}"); ?>"
+                        >
                             <?=Html::encode("{$command->Name}"); ?>
                         </div>
                     <?php endforeach; ?>
@@ -283,11 +288,16 @@ use yii\bootstrap\ActiveForm;
                 <button class="accordion">Amdocs Commands</button>
                 <div class="panel">
                     <?php foreach ($amdocs_commands as $command): ?>
-                        <div class="library_element" name=
-                        <?= Html::encode
-                        ("{$command->ID} {$command->Name} {$command->ABR}
-                                 {$command->Parameters}{$command->Flags}{$command->Code}")
-                        ?>:>
+                        <div class="library_element"
+                             draggable="true"
+                             ondragstart="transferCommandData(event);"
+                             command_id="<?= Html::encode("{$command->ID}"); ?>"
+                             command_name="<?= Html::encode("{$command->Name}"); ?>"
+                             command_abr="<?= Html::encode("{$command->ABR}"); ?>"
+                             command_parameters="<?= Html::encode("{$command->Parameters}"); ?>"
+                             command_flags="<?= Html::encode("{$command->Flags}"); ?>"
+                             command_code="<?= Html::encode("{$command->Code}"); ?>"
+                        >
                             <?=Html::encode("{$command->Name}"); ?>
                         </div>
                     <?php endforeach; ?>
@@ -295,11 +305,16 @@ use yii\bootstrap\ActiveForm;
                 <button class="accordion">User Commands</button>
                 <div class="panel">
                     <?php foreach ($user_commands as $command): ?>
-                        <div class="library_element" name=
-                        <?= Html::encode
-                        ("{$command->ID} {$command->Name} {$command->ABR}
-                                 {$command->Parameters}{$command->Flags}{$command->Code}")
-                        ?>:>
+                        <div class="library_element"
+                             draggable="true"
+                             ondragstart="transferCommandData(event);"
+                             command_id="<?= Html::encode("{$command->ID}"); ?>"
+                             command_name="<?= Html::encode("{$command->Name}"); ?>"
+                             command_abr="<?= Html::encode("{$command->ABR}"); ?>"
+                             command_parameters="<?= Html::encode("{$command->Parameters}"); ?>"
+                             command_flags="<?= Html::encode("{$command->Flags}"); ?>"
+                             command_code="<?= Html::encode("{$command->Code}"); ?>"
+                        >
                             <?=Html::encode("{$command->Name}"); ?>
                         </div>
                     <?php endforeach; ?>
@@ -324,7 +339,7 @@ use yii\bootstrap\ActiveForm;
                     fill: 'blue'
                 },
                 label: {
-                    text: event.dataTransfer.getData("text"),
+                    text: event.dataTransfer.getData("command_name"),
                     fill: 'white'
                 }
             });
@@ -335,8 +350,13 @@ use yii\bootstrap\ActiveForm;
             event.preventDefault();
         }
 
-        function transferLEData(event) {
-            event.dataTransfer.setData("text", event.target.innerText);
+        function transferCommandData(event) {
+            event.dataTransfer.setData("command_id", event.target.getAttribute("command_id"));
+            event.dataTransfer.setData("command_name", event.target.getAttribute("command_name"));
+            event.dataTransfer.setData("command_abr", event.target.getAttribute("command_abr"));
+            event.dataTransfer.setData("command_parameters", event.target.getAttribute("command_parameters"));
+            event.dataTransfer.setData("command_flags", event.target.getAttribute("command_flags"));
+            event.dataTransfer.setData("command_code", event.target.getAttribute("command_code"));
         }
     </script>
 
@@ -345,7 +365,8 @@ use yii\bootstrap\ActiveForm;
 
 <script>
 
-    /**####### Initial - done at start ###################*/
+    /**########### Initial - done at start ###################*/
+    /**## Place here all scrips which is used per document ##*/
 
     let acc = document.getElementsByClassName("accordion");
     let i;
