@@ -258,6 +258,17 @@ use yii\bootstrap\ActiveForm;
             color: white;
             font-size: 10px;
         }
+
+        /* port styling */
+        .available-magnet {
+            fill: yellow;
+            r: 13;
+        }
+
+        /* element styling */
+        .available-cell rect {
+            stroke-dasharray: 5, 2;
+        }
     </style>
 
     <div class="row">
@@ -421,22 +432,17 @@ use yii\bootstrap\ActiveForm;
                 }
             }
 
-            console.log(command_description);
-
-
-
-
             // Do inherit from base html element to create our custom.
             // -------------------------------------------------------------------------
 
             joint.shapes.html = {};
-            joint.shapes.html.Element = joint.shapes.basic.Rect.extend({
+            joint.shapes.html.Element = joint.shapes.devs.Model.extend({
                 defaults: joint.util.deepSupplement({
                     type: 'html.Element',
                     attrs: {
                         rect: { stroke: 'none', 'fill-opacity': 0 }
                     }
-                }, joint.shapes.basic.Rect.prototype.defaults)
+                }, joint.shapes.devs.Model.prototype.defaults),
             });
 
             // Create a custom view for that element that displays an HTML div above it.
@@ -488,6 +494,7 @@ use yii\bootstrap\ActiveForm;
                     this.model.on('remove', this.removeBox, this);
 
                     this.updateBox();
+
                 },
                 render: function() {
                     joint.dia.ElementView.prototype.render.apply(this, arguments);
@@ -495,6 +502,7 @@ use yii\bootstrap\ActiveForm;
                     this.updateBox();
                     return this;
                 },
+
                 updateBox: function() {
                     // Set the position and dimension of the box so that it covers the JointJS element.
                     var bbox = this.model.getBBox();
@@ -514,6 +522,9 @@ use yii\bootstrap\ActiveForm;
                 }
             });
 
+            // Vary box sizes depending on command parameters.
+            // -----------------------------------------------------------
+
             let additionalHeight = (flags_str_arr.length-1)*10 + (parameters_str_arr.length-1)*10
 
             // Create JointJS elements and add them to the graph as usual.
@@ -523,6 +534,28 @@ use yii\bootstrap\ActiveForm;
                 size: {
                     width: 190,
                     height: 70 + additionalHeight
+                },
+                inPorts: ['in'],
+                outPorts: ['out'],
+                ports: {
+                    groups: {
+                        'in': {
+                            position: 'top',
+                            attrs: {
+                                '.port-body': {
+                                    fill: '#16A085'
+                                }
+                            }
+                        },
+                        'out': {
+                            position: 'bottom',
+                            attrs: {
+                                '.port-body': {
+                                    fill: '#E74C3C'
+                                }
+                            }
+                        }
+                    }
                 },
                 label: event.dataTransfer.getData("command_name"),
             });
@@ -584,6 +617,31 @@ use yii\bootstrap\ActiveForm;
         }
     });
 
+
+    // Override dia.Link class for enabling to see the arrow cursor and disable double marking.
+    joint.dia.Link = joint.dia.Link.extend({
+        defaults: joint.util.deepSupplement({
+            type: 'dia.Link',
+            markup: [
+                '<path class="connection" stroke="black" d="M 0 0 0 0"/>',
+                '<path class="marker-source" fill="orange" stroke="black" d="M 0 0 0 0"/>',
+                '<path class="marker-target" fill="orange" stroke="black" d="M 10 0 L 0 5 L 10 10 z"/>',
+                '<path class="connection-wrap" d="M 0 0 0 0"/>',
+                '<g class="labels"/>',
+                '<g class="marker-vertices"/>',
+                '<g class="marker-arrowheads"/>',
+                '<g class="link-tools"/>'
+            ].join(''),
+
+            arrowheadMarkup: [
+                '<g class="marker-arrowhead-group marker-arrowhead-group-<%= end %>">',
+                '<path class="marker-arrowhead" end="<%= end %>" d="M 0 0 0 0" />',
+                '</g>'
+            ].join(''),
+
+        }, joint.dia.Link.prototype.defaults),
+    });
+
     var graph = new joint.dia.Graph();
 
     var paper = new joint.dia.Paper({
@@ -592,8 +650,113 @@ use yii\bootstrap\ActiveForm;
         height: 2000,
         model: graph,
         gridSize: 10,
-        drawGrid: true
+        drawGrid: true,
+        snapLinks: { radius: 100 },
+
+        // Prevent connection from out to in
+        validateConnection: function(cellViewS, magnetS, cellViewT, magnetT, end, linkView) {
+            // Prevent linking from input ports.
+            if (magnetS && magnetS.getAttribute('port-group') === 'in') return false;
+            // Prevent linking from output ports to input ports within one element.
+            if (cellViewS === cellViewT) return false;
+            // Prevent linking to input ports which are already linked
+            var links = graph.getConnectedLinks(cellViewT.model, { inbound: true });
+            if(links.length > 0) return false;
+            // Prevent linking to input ports.
+            return magnetT && magnetT.getAttribute('port-group') === 'in';
+        },
+
+        validateMagnet: function(cellView, magnet) {
+            // Prevent links from ports that already have a link
+            var port = magnet.getAttribute('port');
+            var links = graph.getConnectedLinks(cellView.model, { outbound: true });
+            var portLinks = _.filter(links, function(o) {
+                return o.get('source').port == port;
+            });
+            if(portLinks.length > 0) return false;
+            // Note that this is the default behaviour. Just showing it here for reference.
+            // Disable linking interaction for magnets marked as passive (see below `.inPorts circle`).
+            return magnet.getAttribute('magnet') !== 'passive';
+        },
+
+        // Enable marking available cells & magnets
+        markAvailable: true,
+
+        // Disable dropping on blank area
+        linkPinning: false,
+
+        // Disable multiple linking
+        multiLinks: false,
+
+        // Overriden will be in use
+        defaultLink: new joint.dia.Link()
+
     });
+
+
+    var start_cell = new joint.shapes.devs.Model({
+        size: {
+            width: 100,
+            height: 50
+        },
+        outPorts: ['out'],
+        ports: {
+            groups: {
+                'out': {
+                    position: 'bottom',
+                    attrs: {
+                        '.port-body': {
+                            fill: '#E74C3C'
+                        },
+                    }
+                }
+            }
+        },
+        attrs: {
+            '.label': { text: 'Start', fill: 'black',  'ref-y': 20},
+            rect: { fill: 'orange' }
+        }
+    });
+
+
+    start_cell.position(250, 30);
+    graph.addCell(start_cell);
+
+    var finish_cell = new joint.shapes.devs.Model({
+        size: {
+            width: 100,
+            height: 50
+        },
+        inPorts: ['in'],
+        ports: {
+            groups: {
+                'in': {
+                    position: 'top',
+                    attrs: {
+                        '.port-body': {
+                            fill: '#16A085',
+                            magnet: 'passive'
+                        },
+                    },
+                    label: {
+                        position: {
+                            name: 'right',
+                            args: { y: -10 } // extra arguments for the label layout function, see `layout.PortLabel` section
+                        }
+                    },
+                },
+            }
+        },
+        attrs: {
+            '.label': { text: 'Finish', fill: 'black',  'ref-y': 20 },
+            rect: { fill: 'orange' }
+        }
+    });
+    finish_cell.position(250, 400);
+    finish_cell.attr('label/text', 'End');
+
+    finish_cell.addTo(graph);
+
 
     var paper_scale = 1;
 
