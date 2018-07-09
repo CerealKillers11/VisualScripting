@@ -37,9 +37,11 @@ use \app\models\Users;
 
             <?= $form->field($model, 'ABR') ?>
 
-            <?= $form->field($model, 'Parameters') ?>
+            <?= $form->field($model, 'Parameters')->
+                label('Parameters (e.g. file names/patterns..) :') ?>
 
-            <?= $form->field($model, 'Flags') ?>
+            <?= $form->field($model, 'Flags')->
+                label('Flags (e.g -l,--no-output..) :') ?>
 
             <?= $form->field($model, 'Code')->textarea(['rows' => 6]) ?>
 
