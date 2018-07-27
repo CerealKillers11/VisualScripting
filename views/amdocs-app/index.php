@@ -259,16 +259,16 @@ use yii\bootstrap\ActiveForm;
             font-size: 10px;
         }
 
-        /* port styling */
-        .available-magnet {
-            fill: yellow;
-            r: 13;
-        }
+        /*!* port styling *!*/
+        /*.available-magnet {*/
+            /*fill: yellow;*/
+            /*r: 13;*/
+        /*}*/
 
-        /* element styling */
-        .available-cell rect {
-            stroke-dasharray: 5, 2;
-        }
+        /*!* element styling *!*/
+        /*.available-cell rect {*/
+            /*stroke-dasharray: 5, 2;*/
+        /*}*/
     </style>
 
     <div class="row">
@@ -529,38 +529,126 @@ use yii\bootstrap\ActiveForm;
 
             // Create JointJS elements and add them to the graph as usual.
             // -----------------------------------------------------------
-            let el1 = new joint.shapes.html.Element({
-                position: { x: 150, y: 150 },
-                size: {
-                    width: 190,
-                    height: 70 + additionalHeight
-                },
-                inPorts: ['in'],
-                outPorts: ['out'],
-                ports: {
-                    groups: {
-                        'in': {
-                            position: 'top',
-                            attrs: {
-                                '.port-body': {
-                                    fill: '#16A085'
+
+            if(command_name.localeCompare('if') == 0){
+                let if_element = new joint.shapes.html.Element({
+                    position: { x:20, y: 20 },
+                    size: {
+                        width: 190,
+                        height: 70 + additionalHeight
+                    },
+                    inPorts: ['in'],
+                    outPorts: ['out(true)','out(false)'],
+                    ports: {
+                        groups: {
+                            'in': {
+                                position: 'top',
+                                attrs: {
+                                    '.port-body': {
+                                        fill: '#16A085'
+                                    }
+                                },
+                                label: {
+                                    position: {
+                                        name: 'right',
+                                        args: { y: -10 } // extra arguments for the label layout function, see `layout.PortLabel` section
+                                    }
                                 }
-                            }
-                        },
-                        'out': {
-                            position: 'bottom',
-                            attrs: {
-                                '.port-body': {
-                                    fill: '#E74C3C'
+                            },
+                            'out': {
+                                position: 'bottom',
+                                attrs: {
+                                    '.port-body': {
+                                        fill: '#E74C3C'
+                                    }
                                 }
                             }
                         }
-                    }
-                },
-                label: event.dataTransfer.getData("command_name"),
-            });
+                    },
+                    label: event.dataTransfer.getData("command_name"),
+                });
 
-            el1.addTo(graph);
+                if_element.addTo(graph);
+            }
+            else if(command_name.localeCompare('for') == 0){
+                let for_element = new joint.shapes.html.Element({
+                    position: { x:20, y: 20 },
+                    size: {
+                        width: 190,
+                        height: 70 + additionalHeight
+                    },
+                    inPorts: ['in'],
+                    outPorts: ['loop','continue'],
+                    ports: {
+                        groups: {
+                            'in': {
+                                position: 'top',
+                                attrs: {
+                                    '.port-body': {
+                                        fill: '#16A085'
+                                    }
+                                },
+                                label: {
+                                    position: {
+                                        name: 'right',
+                                        args: { y: -10 } // extra arguments for the label layout function, see `layout.PortLabel` section
+                                    }
+                                }
+                            },
+                            'out': {
+                                position: 'bottom',
+                                attrs: {
+                                    '.port-body': {
+                                        fill: '#E74C3C'
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    label: event.dataTransfer.getData("command_name"),
+                });
+
+                for_element.addTo(graph);
+            }
+            else{
+                let command_element = new joint.shapes.html.Element({
+                    position: { x:20, y: 20 },
+                    size: {
+                        width: 190,
+                        height: 70 + additionalHeight
+                    },
+                    inPorts: ['in'],
+                    outPorts: ['out'],
+                    ports: {
+                        groups: {
+                            'in': {
+                                position: 'top',
+                                attrs: {
+                                    '.port-body': {
+                                        fill: '#16A085'
+                                    }
+                                },
+                                label: {
+                                    position: {
+                                        name: 'right',
+                                        args: { y: -10 } // extra arguments for the label layout function, see `layout.PortLabel` section
+                                    }
+                                }
+                            },
+                            'out': {
+                                position: 'bottom',
+                                attrs: {
+                                    '.port-body': {
+                                        fill: '#E74C3C'
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    label: event.dataTransfer.getData("command_name"),
+                });
+                command_element.addTo(graph);
+            }
         }
 
         function allowDrop(event) {
@@ -651,18 +739,19 @@ use yii\bootstrap\ActiveForm;
         model: graph,
         gridSize: 10,
         drawGrid: true,
-        snapLinks: { radius: 100 },
+        snapLinks: { radius: 50 },
 
-        // Prevent connection from out to in
         validateConnection: function(cellViewS, magnetS, cellViewT, magnetT, end, linkView) {
             // Prevent linking from input ports.
             if (magnetS && magnetS.getAttribute('port-group') === 'in') return false;
             // Prevent linking from output ports to input ports within one element.
             if (cellViewS === cellViewT) return false;
-            // Prevent linking to input ports which are already linked
-            var links = graph.getConnectedLinks(cellViewT.model, { inbound: true });
-            if(links.length > 0) return false;
-            // Prevent linking to input ports.
+
+            // Prevent linking to input ports which are already linked.
+            // var links = graph.getConnectedLinks(cellViewT.model, { inbound: true });
+            // if(links.length > 0) return false;
+
+            // Prevent linking from input ports.
             return magnetT && magnetT.getAttribute('port-group') === 'in';
         },
 
@@ -719,7 +808,7 @@ use yii\bootstrap\ActiveForm;
     });
 
 
-    start_cell.position(250, 30);
+    start_cell.position(350, 30);
     graph.addCell(start_cell);
 
     var finish_cell = new joint.shapes.devs.Model({
@@ -752,7 +841,7 @@ use yii\bootstrap\ActiveForm;
             rect: { fill: 'orange' }
         }
     });
-    finish_cell.position(250, 400);
+    finish_cell.position(350, 400);
     finish_cell.attr('label/text', 'End');
 
     finish_cell.addTo(graph);

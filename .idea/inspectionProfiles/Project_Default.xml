@@ -1,6 +1,21 @@
 <component name="InspectionProjectProfileManager">
   <profile version="1.0">
     <option name="myName" value="Project Default" />
+    <inspection_tool class="HtmlUnknownAttribute" enabled="true" level="WARNING" enabled_by_default="true">
+      <option name="myValues">
+        <value>
+          <list size="6">
+            <item index="0" class="java.lang.String" itemvalue="command_name" />
+            <item index="1" class="java.lang.String" itemvalue="command_id" />
+            <item index="2" class="java.lang.String" itemvalue="command_abr" />
+            <item index="3" class="java.lang.String" itemvalue="command_parameters" />
+            <item index="4" class="java.lang.String" itemvalue="command_flags" />
+            <item index="5" class="java.lang.String" itemvalue="command_code" />
+          </list>
+        </value>
+      </option>
+      <option name="myCustomValuesEnabled" value="true" />
+    </inspection_tool>
     <inspection_tool class="JSHint" enabled="true" level="ERROR" enabled_by_default="true" />
   </profile>
 </component>
