@@ -7,14 +7,14 @@ use Yii;
 /**
  * This is the model class for table "commands".
  *
- * @property string $ID
+ * @property string $id
  * @property string $username
- * @property string $Name
- * @property string $ABR
- * @property string $Parameters
- * @property string $Flags
- * @property string $Code
- * @property string $Description
+ * @property string $name
+ * @property string $parameters
+ * @property string $flags
+ * @property string $code
+ * @property string $description
+ * @property int $private
  *
  * @property Users $username0
  */
@@ -34,12 +34,12 @@ class Commands extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['ID', 'username', 'Name', 'ABR', 'Code'], 'required'],
-            [['Name', 'Parameters', 'Flags', 'Code', 'Description'], 'string'],
-            [['ID'], 'string', 'max' => 12],
+            [['id', 'username', 'name', 'code', 'private'], 'required'],
+            [['name', 'parameters', 'flags', 'code', 'description'], 'string'],
+            [['id'], 'string', 'max' => 12],
             [['username'], 'string', 'max' => 50],
-            [['ABR'], 'string', 'max' => 5],
-            [['ID'], 'unique'],
+            [['private'], 'string', 'max' => 1],
+            [['id'], 'unique'],
             [['username'], 'exist', 'skipOnError' => true, 'targetClass' => Users::className(), 'targetAttribute' => ['username' => 'username']],
         ];
     }
@@ -50,14 +50,14 @@ class Commands extends \yii\db\ActiveRecord
     public function attributeLabels()
     {
         return [
-            'ID' => 'ID',
+            'id' => 'ID',
             'username' => 'Username',
-            'Name' => 'Name',
-            'ABR' => 'Abr',
-            'Parameters' => 'Parameters',
-            'Flags' => 'Flags',
-            'Code' => 'Code',
-            'Description' => 'Description',
+            'name' => 'Name',
+            'parameters' => 'Parameters',
+            'flags' => 'Flags',
+            'code' => 'Code',
+            'description' => 'Description',
+            'private' => 'Private',
         ];
     }
 

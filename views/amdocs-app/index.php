@@ -13,6 +13,7 @@ use yii\bootstrap\ActiveForm;
     <script src="js/lodash.js"></script>
     <script src="js/backbone.js"></script>
     <script src="js/joint.js"></script>
+    <script src="js/Logger.js"></script>
     <link rel="stylesheet" type="text/css" href="css/joint.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
     <style>
@@ -330,33 +331,31 @@ use yii\bootstrap\ActiveForm;
                         <div class="library_element"
                              draggable="true"
                              ondragstart="transferCommandData(event);"
-                             command_id="<?= Html::encode("{$command->ID}"); ?>"
-                             command_name="<?= Html::encode("{$command->Name}"); ?>"
-                             command_abr="<?= Html::encode("{$command->ABR}"); ?>"
-                             command_parameters="<?= Html::encode("{$command->Parameters}"); ?>"
-                             command_flags="<?= Html::encode("{$command->Flags}"); ?>"
-                             command_code="<?= Html::encode("{$command->Code}"); ?>"
-                             command_description="<?= Html::encode("{$command->Description}"); ?>"
+                             command_id="<?= Html::encode("{$command->id}"); ?>"
+                             command_name="<?= Html::encode("{$command->name}"); ?>"
+                             command_parameters="<?= Html::encode("{$command->parameters}"); ?>"
+                             command_flags="<?= Html::encode("{$command->flags}"); ?>"
+                             command_code="<?= Html::encode("{$command->code}"); ?>"
+                             command_description="<?= Html::encode("{$command->description}"); ?>"
                         >
-                            <?=Html::encode("{$command->Name}"); ?>
+                            <?=Html::encode("{$command->name}"); ?>
                         </div>
                     <?php endforeach; ?>
                 </div>
-                <button class="accordion">Amdocs Commands</button>
+                <button class="accordion">Workgroup Commands</button>
                 <div class="panel">
-                    <?php foreach ($amdocs_commands as $command): ?>
+                    <?php foreach ($group_commands as $command): ?>
                         <div class="library_element"
                              draggable="true"
                              ondragstart="transferCommandData(event);"
-                             command_id="<?= Html::encode("{$command->ID}"); ?>"
-                             command_name="<?= Html::encode("{$command->Name}"); ?>"
-                             command_abr="<?= Html::encode("{$command->ABR}"); ?>"
-                             command_parameters="<?= Html::encode("{$command->Parameters}"); ?>"
-                             command_flags="<?= Html::encode("{$command->Flags}"); ?>"
-                             command_code="<?= Html::encode("{$command->Code}"); ?>"
-                             command_description="<?= Html::encode("{$command->Description}"); ?>"
+                             command_id="<?= Html::encode("{$command->id}"); ?>"
+                             command_name="<?= Html::encode("{$command->name}"); ?>"
+                             command_parameters="<?= Html::encode("{$command->parameters}"); ?>"
+                             command_flags="<?= Html::encode("{$command->flags}"); ?>"
+                             command_code="<?= Html::encode("{$command->code}"); ?>"
+                             command_description="<?= Html::encode("{$command->description}"); ?>"
                         >
-                            <?=Html::encode("{$command->Name}"); ?>
+                            <?=Html::encode("{$command->name}"); ?>
                         </div>
                     <?php endforeach; ?>
                 </div>
@@ -366,15 +365,14 @@ use yii\bootstrap\ActiveForm;
                         <div class="library_element"
                              draggable="true"
                              ondragstart="transferCommandData(event);"
-                             command_id="<?= Html::encode("{$command->ID}"); ?>"
-                             command_name="<?= Html::encode("{$command->Name}"); ?>"
-                             command_abr="<?= Html::encode("{$command->ABR}"); ?>"
-                             command_parameters="<?= Html::encode("{$command->Parameters}"); ?>"
-                             command_flags="<?= Html::encode("{$command->Flags}"); ?>"
-                             command_code="<?= Html::encode("{$command->Code}"); ?>"
-                             command_description="<?= Html::encode("{$command->Description}"); ?>"
+                             command_id="<?= Html::encode("{$command->id}"); ?>"
+                             command_name="<?= Html::encode("{$command->name}"); ?>"
+                             command_parameters="<?= Html::encode("{$command->parameters}"); ?>"
+                             command_flags="<?= Html::encode("{$command->flags}"); ?>"
+                             command_code="<?= Html::encode("{$command->code}"); ?>"
+                             command_description="<?= Html::encode("{$command->description}"); ?>"
                         >
-                            <?=Html::encode("{$command->Name}"); ?>
+                            <?=Html::encode("{$command->name}"); ?>
                         </div>
                     <?php endforeach; ?>
                 </div>
@@ -782,7 +780,6 @@ use yii\bootstrap\ActiveForm;
 
     });
 
-
     var start_cell = new joint.shapes.devs.Model({
         size: {
             width: 100,
@@ -806,7 +803,6 @@ use yii\bootstrap\ActiveForm;
             rect: { fill: 'orange' }
         }
     });
-
 
     start_cell.position(350, 30);
     graph.addCell(start_cell);
@@ -846,7 +842,6 @@ use yii\bootstrap\ActiveForm;
 
     finish_cell.addTo(graph);
 
-
     var paper_scale = 1;
 
     $(document).ready(function () {
@@ -870,6 +865,10 @@ use yii\bootstrap\ActiveForm;
             paper.scale(paper_scale, paper_scale);
         });
     });
+
+    //Add a logger
+    Logger.show();
+    log("This is log!");
 
 </script>
 

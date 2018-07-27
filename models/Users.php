@@ -6,14 +6,16 @@ use Yii;
 
 /**
  * This is the model class for table "users".
- * Helpful when we check login and password.
- * Represents our user db
  *
  * @property string $id
  * @property string $username
  * @property string $password
+ * @property string $workGroup
  * @property string $authKey
  * @property string $accessToken
+ *
+ * @property Commands[] $commands
+ * @property Workgroups $workgroup
  */
 class Users extends \yii\db\ActiveRecord
 {
@@ -31,10 +33,12 @@ class Users extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['id', 'username', 'password', 'authKey', 'accessToken'], 'required'],
-            [['id', 'username', 'password', 'authKey', 'accessToken'], 'string', 'max' => 50],
+            [['id', 'username', 'password', 'workGroup', 'authKey', 'accessToken'], 'required'],
+            [['id', 'username', 'password', 'workGroup', 'authKey', 'accessToken'], 'string', 'max' => 50],
             [['username'], 'unique'],
+            [['accessToken'], 'unique'],
             [['id'], 'unique'],
+            [['workgroup'], 'exist', 'skipOnError' => true, 'targetClass' => Workgroups::className(), 'targetAttribute' => ['workgroup' => 'workgroup']],
         ];
     }
 
@@ -47,10 +51,25 @@ class Users extends \yii\db\ActiveRecord
             'id' => 'ID',
             'username' => 'Username',
             'password' => 'Password',
+            'workGroup' => 'Work Group',
             'authKey' => 'Auth Key',
             'accessToken' => 'Access Token',
         ];
     }
 
-    public function getUsername() { return $this->username; }
+    /**
+     * @return \yii\db\ActiveQuery
+     */
+    public function getCommands()
+    {
+        return $this->hasMany(Commands::className(), ['username' => 'username']);
+    }
+
+    /**
+     * @return \yii\db\ActiveQuery
+     */
+    public function getWorkgroup()
+    {
+        return $this->hasOne(Workgroups::className(), ['workGroup' => 'workGroup']);
+    }
 }

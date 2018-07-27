@@ -54,18 +54,16 @@ $this->registerJsFile($pub2[1], ['depends' => ['yii\web\JqueryAsset']]);
 
             ?>
 
-            <?= $form->field($model, 'Name')->label('Short descriptive name for your script') ?>
+            <?= $form->field($model, 'name')->label('Short descriptive name for your script') ?>
 
-            <?= $form->field($model, 'ABR')->label('Add abbreviation for your script') ?>
+            <?= $form->field($model, 'parameters')->label('Parameters, if need') ?>
 
-            <?= $form->field($model, 'Parameters')->label('Parameters, if need') ?>
+            <?= $form->field($model, 'flags')->label('Flags, if need') ?>
 
-            <?= $form->field($model, 'Flags')->label('Flags, if need') ?>
-
-            <?= $form->field($model, 'Description')->
+            <?= $form->field($model, 'description')->
                                             textarea(['rows' => 6])->
                                             label('Add a good description for your script') ?>
-            <?= $form->field($model, 'Code')->
+            <?= $form->field($model, 'code')->
                                             hiddenInput(['value' => $script])->
                                             label(false) ?>
 
@@ -73,9 +71,6 @@ $this->registerJsFile($pub2[1], ['depends' => ['yii\web\JqueryAsset']]);
             /** An real input can be changed to 'amdocs' (public command), based on checkbox. username - is default.*/
             $form->field($model, 'username')->hiddenInput(['value' =>
                 Users::findOne(Yii::$app->user->identity->getId())->username])->label(false);
-
-
-
             ?>
 
 
@@ -88,26 +83,9 @@ $this->registerJsFile($pub2[1], ['depends' => ['yii\web\JqueryAsset']]);
                 <?= Html::submitButton('Save script', ['class' => 'btn btn-primary',
 //                    'action' => 'index.php?r=amdocs-app%2Fsave',
                     'name' => 'save-script-button',
-                    'method' => 'post',
-                    'onclick' => 'return confirmSaveScript();'
+                    'method' => 'post'
                 ]) ?>
             </div>
-
-            <script>
-                function confirmSaveScript() {
-                    let checkbox = document.getElementsByName('privateCommandCheckBox')[0];
-
-                    if(checkbox.checked){
-                        return confirm('Do you want to save this script as private ?')
-                    }
-                    else{
-                        document.getElementById('commands-username').setAttribute('value','amdocs');
-                        return confirm('Do you want to save this script as public?')
-                    }
-                }
-            </script>
-
-
 
             <?php ActiveForm::end(); ?>
 

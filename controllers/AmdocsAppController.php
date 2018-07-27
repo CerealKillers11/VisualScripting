@@ -5,6 +5,7 @@ namespace app\controllers;
 use app\models\BuildForm;
 use app\models\InputFlowForm;
 use app\models\Users;
+use app\models\Workgroups;
 use Yii;
 use yii\filters\AccessControl;
 use yii\web\Controller;
@@ -73,24 +74,24 @@ class AmdocsAppController extends \yii\web\Controller
 
     public function actionAddCommand()
     {
-
         $form = Yii::$app->request->post('Commands');
         if($form != null) {
             $model = new Commands();
 
 
-            $model->Name = $form['Name'];
-            $model->ABR = $form['ABR'];
-            $model->Parameters = $form['Parameters'];
-            $model->Flags = $form['Flags'];
-            $model->Code = $form['Code'];
+            $model->name = $form['name'];
+            $model->parameters = $form['parameters'];
+            $model->flags = $form['flags'];
+            $model->code = $form['code'];
             $model->username = $form['username'];
-            $model->Description = $form['Description'];
+            $model->description = $form['description'];
 
+            $private_arr = Yii::$app->request->post('privateCommandCheckBox');
+            $model->private = ($private_arr == null)? '0' : '1';
 
             /** Assign a proper new ID*/
             $size = count(Commands::find()->all());
-            $model->ID  = strval($size+1);
+            $model->id  = strval($size+1);
 
             if($model->validate()){
                 $model->save();
@@ -121,15 +122,33 @@ class AmdocsAppController extends \yii\web\Controller
         }
         $model = new InputFlowForm();
 
-        $basic_commands = Commands::find()->where(['username' => 'basic'])->orderBy('ID')->all();
-        $amdocs_commands = Commands::find()->where(['username' => 'amdocs'])->orderBy('ID')->all();
+        $basic_commands = Commands::find()->where(['username' => 'basic'])->orderBy('id')->all();
+
+        //Now we need to find all users of his group and load their non-private commands
+        $user = Users::findOne(Yii::$app->user->identity->getId());
+        $group = Workgroups::findOne($user->workgroup);
+        $users_from_group = Users::find()->where(['workGroup' => $group->workGroup])->all();
+        $group_commands = [];
+
+        foreach($users_from_group as $u) {
+            $u_commands = Commands::find()->where(['username' => $u->attributes['username'],
+                                                    'private' => '0'])
+                                            ->orderBy('id')
+                                            ->all();
+            foreach ($u_commands as $u_command) {
+                $group_commands[] = $u_command;
+            }
+        }
+
+        //Now we need to load all user's private commands
         $user_commands = Commands::find()->
-            where(['username' => Users::findOne(Yii::$app->user->identity->getId())->username])->
+            where(['username' => Users::findOne(Yii::$app->user->identity->getId())->username,
+                    'private' => "1" ])->
             orderBy('ID')->all();
 
         return $this->render('index', ['model' => $model,
                                             'basic_commands' => $basic_commands,
-                                            'amdocs_commands' => $amdocs_commands,
+                                            'group_commands' => $group_commands,
                                             'user_commands' => $user_commands ]);
     }
 
@@ -163,24 +182,27 @@ class AmdocsAppController extends \yii\web\Controller
         if($form != null) {
             $model = new Commands();
 
-            $model->Name = $form['Name'];
-            $model->ABR = $form['ABR'];
-            $model->Parameters = $form['Parameters'];
-            $model->Flags = $form['Flags'];
-            $model->Code = $form['Code'];
+
+            $model->name = $form['name'];
+            $model->parameters = $form['parameters'];
+            $model->flags = $form['flags'];
+            $model->code = $form['code'];
             $model->username = $form['username'];
-            $model->Description = $form['Description'];
+            $model->description = $form['description'];
+
+            $private_arr = Yii::$app->request->post('privateCommandCheckBox');
+            $model->private = ($private_arr == null)? '0' : '1';
 
             /** Assign a proper new ID*/
             $size = count(Commands::find()->all());
-            $model->ID  = strval($size+1);
+            $model->id  = strval($size+1);
 
             if($model->validate()){
                 $model->save();
-                Yii::$app->session->setFlash('scriptSubmitted');
+                Yii::$app->session->setFlash('commandsSubmitted');
             }
             else{
-                Yii::$app->session->setFlash('scriptValidationFailed');
+                Yii::$app->session->setFlash('validationFailed');
             }
         }
         return $this->render('save');
