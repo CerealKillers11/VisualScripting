@@ -273,7 +273,7 @@ use yii\bootstrap\ActiveForm;
     </style>
 
     <div class="row">
-        <div class="col-sm-3">
+        <div class="col-sm-1">
 
             <?php $form = ActiveForm::begin(['id' => 'input-flow-form',
                 'fieldConfig' => ['enableLabel'=>false], // Do not show the labels in view
@@ -281,14 +281,12 @@ use yii\bootstrap\ActiveForm;
                 'method' => 'post',
             ]); ?>
 
-            <?= /** An real input will be generated dynamically with getUserFlow() */
-            $form->field($model, 'flow')->hiddenInput(['value' => '']); ?>
+            <input type="hidden" id="inputflowform-flow" name="InputFlowForm[flow]" value="">
 
-            <div class="form-group">
-                <?= Html::submitButton('Build', ['class' => 'btn btn-primary',
-                    'name' => 'build-button',
-                    'onclick' => 'setUserFlowToForm();']) ?>
-            </div>
+            <?= Html::submitButton('Build', ['class' => 'btn btn-primary',
+                'name' => 'build-button',
+                'onclick' => 'setUserFlowToForm();']) ?>
+
 
             <script>
                 function setUserFlowToForm() {
@@ -304,27 +302,25 @@ use yii\bootstrap\ActiveForm;
 
             <?php ActiveForm::end(); ?>
         </div>
+
         <div class="col-sm-2">
-            <br>
-            <?= Html::button('Zoom Reset', ['id' => 'zoom-reset-button',
+            <?= Html::button('Execute', ['id' => 'execute-button',
                 'class' => 'btn btn-primary']); ?>
         </div>
-        <div class="col-sm-1">
-            <br>
-            <?= Html::button('Zoom In', ['id' => 'zoom-in-button',
-                'class' => 'btn btn-primary']); ?>
+        <div class="col-lg-1">
+            <p>
+                Execution path:
+            </p>
         </div>
+
         <div class="col-sm-1">
-            <br>
-            <?= Html::button('Zoom Out', ['id' => 'zoom-out-button',
-                'class' => 'btn btn-primary']); ?>
+            <input id="execution_path" type="text" value="<?php echo getcwd(); ?>" size="80">
         </div>
 
     </div>
     <div class="row">
         <div class="leftcolumn">
-
-            <div class="library_menu">
+            <div class="library_menu" style="height: 290px;" >
                 <button class="accordion">Basic Commands</button>
                 <div class="panel">
                     <?php foreach ($basic_commands as $command): ?>
@@ -378,7 +374,8 @@ use yii\bootstrap\ActiveForm;
                 </div>
             </div>
         </div>
-        <div class="rightcolumn" id="rightcolumn" style="height: 640px;">
+
+        <div class="rightcolumn" id="rightcolumn" style="height: 500px;">
                 <div class="paper_holder" id="paper_holder"
                      ondragover="allowDrop(event);"
                      ondrop="addElementToGraph(event);"></div>
@@ -394,7 +391,6 @@ use yii\bootstrap\ActiveForm;
 
             let command_id = event.dataTransfer.getData("command_id");
             let command_name = event.dataTransfer.getData("command_name");
-            let command_abr = event.dataTransfer.getData("command_abr");
             let command_parameters = event.dataTransfer.getData("command_parameters");
             let command_flags = event.dataTransfer.getData("command_flags");
             let command_code = event.dataTransfer.getData("command_code");
@@ -453,10 +449,15 @@ use yii\bootstrap\ActiveForm;
                     '<button class="delete">x</button>',
                     '<button class="btn-info">i</button>',
                     '<label></label>',
+                    '<input name="input_variable" type="text" value="$(in)">',
+                    '------------------------------------',
                     '<span></span>',
                     '<br/>'].concat(
                         flags_str_arr.concat(
-                            parameters_str_arr
+                            parameters_str_arr.concat(
+                                ['------------------------------------',
+                                 '<input name="output_variable" type="text" value="$(out)">']
+                            )
                         )
                     )
                 )
@@ -523,7 +524,7 @@ use yii\bootstrap\ActiveForm;
             // Vary box sizes depending on command parameters.
             // -----------------------------------------------------------
 
-            let additionalHeight = (flags_str_arr.length-1)*10 + (parameters_str_arr.length-1)*10
+            let additionalHeight = (flags_str_arr.length-1)*10 + (parameters_str_arr.length-1)*10 + 100;
 
             // Create JointJS elements and add them to the graph as usual.
             // -----------------------------------------------------------
@@ -782,8 +783,8 @@ use yii\bootstrap\ActiveForm;
 
     var start_cell = new joint.shapes.devs.Model({
         size: {
-            width: 100,
-            height: 50
+            width: 190,
+            height: 30
         },
         outPorts: ['out'],
         ports: {
@@ -799,7 +800,7 @@ use yii\bootstrap\ActiveForm;
             }
         },
         attrs: {
-            '.label': { text: 'Start', fill: 'black',  'ref-y': 20},
+            '.label': { text: 'Start', fill: 'black',  'ref-y': 5},
             rect: { fill: 'orange' }
         }
     });
@@ -809,8 +810,8 @@ use yii\bootstrap\ActiveForm;
 
     var finish_cell = new joint.shapes.devs.Model({
         size: {
-            width: 100,
-            height: 50
+            width: 190,
+            height: 30
         },
         inPorts: ['in'],
         ports: {
@@ -833,7 +834,7 @@ use yii\bootstrap\ActiveForm;
             }
         },
         attrs: {
-            '.label': { text: 'Finish', fill: 'black',  'ref-y': 20 },
+            '.label': { text: 'Finish', fill: 'black',  'ref-y': 15 },
             rect: { fill: 'orange' }
         }
     });
@@ -844,27 +845,27 @@ use yii\bootstrap\ActiveForm;
 
     var paper_scale = 1;
 
-    $(document).ready(function () {
-        $("#zoom-in-button").click(function (e) {
-            e.preventDefault();
-            paper_scale+=0.1;
-            paper.scale(paper_scale, paper_scale);
-        });
-    });
-    $(document).ready(function () {
-        $("#zoom-out-button").click(function (e) {
-            e.preventDefault();
-            paper_scale-=0.1;
-            paper.scale(paper_scale, paper_scale);
-        });
-    });
-    $(document).ready(function () {
-        $("#zoom-reset-button").click(function (e) {
-            e.preventDefault();
-            paper_scale=1;
-            paper.scale(paper_scale, paper_scale);
-        });
-    });
+    // $(document).ready(function () {
+    //     $("#zoom-in-button").click(function (e) {
+    //         e.preventDefault();
+    //         paper_scale+=0.1;
+    //         paper.scale(paper_scale, paper_scale);
+    //     });
+    // });
+    // $(document).ready(function () {
+    //     $("#zoom-out-button").click(function (e) {
+    //         e.preventDefault();
+    //         paper_scale-=0.1;
+    //         paper.scale(paper_scale, paper_scale);
+    //     });
+    // });
+    // $(document).ready(function () {
+    //     $("#zoom-reset-button").click(function (e) {
+    //         e.preventDefault();
+    //         paper_scale=1;
+    //         paper.scale(paper_scale, paper_scale);
+    //     });
+    // });
 
     //Add a logger
     Logger.show();
