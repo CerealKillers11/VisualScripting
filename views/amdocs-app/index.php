@@ -476,7 +476,32 @@ use yii\bootstrap\ActiveForm;
                     });
                     // Reacting on the input change and storing the input data in the cell model.
                     this.$box.find('input').on('change', _.bind(function(evt) {
-                        this.model.set('input', $(evt.target).val());
+
+                        // We need to listen on user changes of html elements and save
+                        // the data inside a model, for future building the script.
+
+                        // Array of all inputs, include checkboxes.
+                        let user_inputs_array = $.makeArray(this.$box.find('input'));
+
+                        //First one is always input variable and last one is output variable.
+                        let input_variable = user_inputs_array[0].value;
+                        let output_variable = user_inputs_array[user_inputs_array.length - 1].value;
+
+                        let flag_checkboxes = user_inputs_array.filter(function (input) {
+                            return input.type.localeCompare('checkbox') == 0;
+                        });
+
+                        let text_inputs = user_inputs_array.filter(function (input,i,arr) {
+                            if(i===0 || i===arr.length-1) return false;
+                            return input.type.localeCompare('text') == 0;
+                        });
+
+                        this.model.set('input_variable',input_variable);
+                        this.model.set('output_variable',output_variable);
+                        this.model.set('flag_checkboxes',flag_checkboxes);
+                        this.model.set('text_inputs',text_inputs);
+
+                        // this.model.set('input', $(evt.target).val());
                         // alert('input changed!');
                         this.$box.css({
                             borderStyle: 'solid',
@@ -486,7 +511,6 @@ use yii\bootstrap\ActiveForm;
 
                     // Reacting on the keypress as unsaved data.
                     this.$box.find('input').on('keypress', _.bind(function(evt) {
-                        // alert('keypressed!');
                         this.$box.css({
                             borderStyle: 'solid',
                             borderColor: 'red'
