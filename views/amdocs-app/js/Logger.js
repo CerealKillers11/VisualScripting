@@ -230,7 +230,7 @@ var Logger = (function()
                 span.style.fontWeight = "bold";
 
                 // the first message in log
-                var msg = "===== Log Started at " +
+                var msg = "===== VisualScripting Log Started at " +
                           getDate() + ", " + getTime() + ", " +
                           "(Logger version " + version + ") " +
                           "=====";

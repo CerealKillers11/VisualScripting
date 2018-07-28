@@ -73,7 +73,7 @@ use yii\bootstrap\ActiveForm;
 
         /* Right column */
         .rightcolumn {
-            float: left;
+
             width: 75%;
             background-color: #f1f1f1;
             padding-left: 20px;
@@ -290,12 +290,13 @@ use yii\bootstrap\ActiveForm;
 
             <script>
                 function setUserFlowToForm() {
-                    let unparsed_input_flow = "";
-                    $( "div.canvas_element" ).each(function() {
-                        unparsed_input_flow += $( this ).attr("name") + "<br>";
-                    });
-                    document.getElementById('inputflowform-flow').setAttribute('value',unparsed_input_flow);
-
+                    // let json_graph_string = JSON.stringify(graph.toJSON());
+                    // let json_graph_string =JSON.stringify(graph.getSuccessors(start_cell)[0].toJSON());
+                    let succ = graph.getSuccessors(start_cell)[0];
+                    let view = paper.findViewByModel(succ);
+                    let j_view = view.template;
+                    let json_graph_string =JSON.stringify(view.toJSON());
+                    document.getElementById('inputflowform-flow').setAttribute('value',json_graph_string);
                     alert("Do you want to build?");
                 }
             </script>
@@ -376,7 +377,7 @@ use yii\bootstrap\ActiveForm;
         </div>
 
         <div class="rightcolumn" id="rightcolumn" style="height: 500px;">
-                <div class="paper_holder" id="paper_holder"
+                <div class="paper_holder" id="paper_holder" style="height: 500px; width:500px;"
                      ondragover="allowDrop(event);"
                      ondrop="addElementToGraph(event);"></div>
         </div>
@@ -437,6 +438,7 @@ use yii\bootstrap\ActiveForm;
                         rect: { stroke: 'none', 'fill-opacity': 0 }
                     }
                 }, joint.shapes.devs.Model.prototype.defaults),
+
             });
 
             // Create a custom view for that element that displays an HTML div above it.
@@ -472,12 +474,30 @@ use yii\bootstrap\ActiveForm;
                     this.$box.find('input,select').on('mousedown click', function(evt) {
                         evt.stopPropagation();
                     });
-                    // This is an example of reacting on the input change and storing the input data in the cell model.
+                    // Reacting on the input change and storing the input data in the cell model.
                     this.$box.find('input').on('change', _.bind(function(evt) {
                         this.model.set('input', $(evt.target).val());
+                        // alert('input changed!');
+                        this.$box.css({
+                            borderStyle: 'solid',
+                            borderColor: 'green'
+                        });
                     }, this));
+
+                    // Reacting on the keypress as unsaved data.
+                    this.$box.find('input').on('keypress', _.bind(function(evt) {
+                        // alert('keypressed!');
+                        this.$box.css({
+                            borderStyle: 'solid',
+                            borderColor: 'red'
+                        });
+                    }, this));
+
+
+
                     this.$box.find('select').on('change', _.bind(function(evt) {
                         this.model.set('select', $(evt.target).val());
+                        alert('select changed!');
                     }, this));
                     this.$box.find('select').val(this.model.get('select'));
                     this.$box.find('.delete').on('click', _.bind(this.model.remove, this.model));
@@ -839,8 +859,6 @@ use yii\bootstrap\ActiveForm;
         }
     });
     finish_cell.position(350, 400);
-    finish_cell.attr('label/text', 'End');
-
     finish_cell.addTo(graph);
 
     var paper_scale = 1;

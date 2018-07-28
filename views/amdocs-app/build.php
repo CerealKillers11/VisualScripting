@@ -28,7 +28,7 @@ $this->registerJsFile($pub2[1], ['depends' => ['yii\web\JqueryAsset']]);
 
     <p>
         This is the Build page. You can see here your prepared script ready to be executed: <br><br>
-        <?php echo $script; ?>
+        <?php echo var_dump($script); ?>
     </p>
 
     <br>
@@ -64,7 +64,7 @@ $this->registerJsFile($pub2[1], ['depends' => ['yii\web\JqueryAsset']]);
                                             textarea(['rows' => 6])->
                                             label('Add a good description for your script') ?>
             <?= $form->field($model, 'code')->
-                                            hiddenInput(['value' => $script])->
+                                            hiddenInput(['value' => ''])->
                                             label(false) ?>
 
             <?=

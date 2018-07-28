@@ -11,7 +11,7 @@ use yii\base\Model;
 /**
  * This is the model class for encoded script to be transferred to build and run.
  *
- * @property string $input
+ * @property string $flow
  */
 class InputFlowForm extends Model
 {

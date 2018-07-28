@@ -32,7 +32,7 @@ class AmdocsAppController extends \yii\web\Controller
         $form = Yii::$app->request->post('BuildForm');
         $test = Yii::$app->request->post('InputFlowForm');
 
-        $kuku = $test['flow'];
+        $kuku = $test;
 
         /** We want to transfer the full script to be approved by user before is is executed. */
 
