@@ -444,26 +444,67 @@ use yii\bootstrap\ActiveForm;
             // Create a custom view for that element that displays an HTML div above it.
             // -------------------------------------------------------------------------
 
-            joint.shapes.html.ElementView = joint.dia.ElementView.extend({
 
-                template: ([
-                    '<div class="html-element">',
+            // Template string can vary depending on command, e.g. 'for' and 'if'.
+            // -------------------------------------------------------------------------
+
+            let template_str = '';
+
+            if(command_name.localeCompare('for') == 0) { // For loop have no input and output variables
+                template_str =
+                ([  '<div class="html-element">',
                     '<button class="delete">x</button>',
                     '<button class="btn-info">i</button>',
                     '<label></label>',
-                    '<input name="input_variable" type="text" value="$(in)">',
-                    '------------------------------------',
+                    '<span></span>',
+                    '<br/>'].concat(
+                        flags_str_arr.concat(
+                            parameters_str_arr
+                        )
+                    )
+                ).join('');
+            }
+            else if(command_name.localeCompare('if') == 0) { // Input is condition, output is true/false
+                template_str =
+                ([  '<div class="html-element">',
+                    '<button class="delete">x</button>',
+                    '<button class="btn-info">i</button>',
+                    '<label></label>',
                     '<span></span>',
                     '<br/>'].concat(
                         flags_str_arr.concat(
                             parameters_str_arr.concat(
                                 ['------------------------------------',
-                                 '<input name="output_variable" type="text" value="$(out)">']
+                                    '<input name="output_variable" type="text" value="$(out)">']
                             )
                         )
                     )
-                )
-                .join(''),
+                ).join('');
+            }
+            else { // Other command with possible input and output
+                template_str =
+                    ([
+                            '<div class="html-element">',
+                            '<button class="delete">x</button>',
+                            '<button class="btn-info">i</button>',
+                            '<label></label>',
+                            '<input name="input_variable" type="text" value="$(in)">',
+                            '------------------------------------',
+                            '<span></span>',
+                            '<br/>'].concat(
+                            flags_str_arr.concat(
+                                parameters_str_arr.concat(
+                                    ['------------------------------------',
+                                        '<input name="output_variable" type="text" value="$(out)">']
+                                )
+                            )
+                        )
+                    ).join('');
+            }
+
+            joint.shapes.html.ElementView = joint.dia.ElementView.extend({
+
+                template: template_str,
 
                 initialize: function() {
                     _.bindAll(this, 'updateBox');
@@ -517,11 +558,8 @@ use yii\bootstrap\ActiveForm;
                         });
                     }, this));
 
-
-
                     this.$box.find('select').on('change', _.bind(function(evt) {
                         this.model.set('select', $(evt.target).val());
-                        alert('select changed!');
                     }, this));
                     this.$box.find('select').val(this.model.get('select'));
                     this.$box.find('.delete').on('click', _.bind(this.model.remove, this.model));
@@ -578,7 +616,7 @@ use yii\bootstrap\ActiveForm;
                     position: { x:20, y: 20 },
                     size: {
                         width: 190,
-                        height: 70 + additionalHeight
+                        height: 20 + additionalHeight
                     },
                     inPorts: ['in'],
                     outPorts: ['out(true)','out(false)'],
@@ -618,7 +656,7 @@ use yii\bootstrap\ActiveForm;
                     position: { x:20, y: 20 },
                     size: {
                         width: 190,
-                        height: 70 + additionalHeight
+                        height: 70
                     },
                     inPorts: ['in'],
                     outPorts: ['loop','continue'],
