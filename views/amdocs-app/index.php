@@ -524,33 +524,50 @@ use yii\bootstrap\ActiveForm;
                         // Array of all inputs, include checkboxes.
                         let user_inputs_array = $.makeArray(this.$box.find('input'));
 
-                        //First one is always input variable and last one is output variable.
-                        let input_variable = user_inputs_array[0].value;
-                        let output_variable = user_inputs_array[user_inputs_array.length - 1].value;
+                        // First one is always input variable and last one is output variable.
+                        // But not in case we dealing with 'for' or 'if'
+                        if(command_name.localeCompare('for')==0){
+                            let text_inputs = user_inputs_array.filter(function (input,i,arr) {
+                                return input.type.localeCompare('text') == 0;
+                            });
+                            this.model.set('text_inputs',text_inputs);
 
-                        let flag_checkboxes = user_inputs_array.filter(function (input) {
-                            return input.type.localeCompare('checkbox') == 0;
-                        });
+                        }
+                        else if(command_name.localeCompare('if')==0){
+                            let output_variable = user_inputs_array[user_inputs_array.length - 1].value;
+                            let text_inputs = user_inputs_array.filter(function (input,i,arr) {
+                                if(i===arr.length-1) return false;
+                                return input.type.localeCompare('text') == 0;
+                            });
+                            this.model.set('output_variable',output_variable);
+                            this.model.set('text_inputs',text_inputs);
 
-                        let text_inputs = user_inputs_array.filter(function (input,i,arr) {
-                            if(i===0 || i===arr.length-1) return false;
-                            return input.type.localeCompare('text') == 0;
-                        });
+                        }
+                        else {
+                            let input_variable = user_inputs_array[0].value;
+                            let output_variable = user_inputs_array[user_inputs_array.length - 1].value;
+                            let flag_checkboxes = user_inputs_array.filter(function (input) {
+                                return input.type.localeCompare('checkbox') == 0;
+                            });
+                            let text_inputs = user_inputs_array.filter(function (input,i,arr) {
+                                if(i===0 || i===arr.length-1) return false;
+                                return input.type.localeCompare('text') == 0;
+                            });
 
-                        this.model.set('input_variable',input_variable);
-                        this.model.set('output_variable',output_variable);
-                        this.model.set('flag_checkboxes',flag_checkboxes);
-                        this.model.set('text_inputs',text_inputs);
+                            this.model.set('input_variable',input_variable);
+                            this.model.set('output_variable',output_variable);
+                            this.model.set('flag_checkboxes',flag_checkboxes);
+                            this.model.set('text_inputs',text_inputs);
+                        }
 
-                        // this.model.set('input', $(evt.target).val());
-                        // alert('input changed!');
+                        // Reacting on saving data to model with green border.
                         this.$box.css({
                             borderStyle: 'solid',
                             borderColor: 'green'
                         });
                     }, this));
 
-                    // Reacting on the keypress as unsaved data.
+                    // Reacting on the keypress as unsaved data - red border.
                     this.$box.find('input').on('keypress', _.bind(function(evt) {
                         this.$box.css({
                             borderStyle: 'solid',
@@ -807,6 +824,7 @@ use yii\bootstrap\ActiveForm;
                 '<path class="marker-arrowhead" end="<%= end %>" d="M 0 0 0 0" />',
                 '</g>'
             ].join(''),
+            router: { name: 'manhattan' },
 
         }, joint.dia.Link.prototype.defaults),
     });
@@ -865,7 +883,7 @@ use yii\bootstrap\ActiveForm;
 
     var start_cell = new joint.shapes.devs.Model({
         size: {
-            width: 190,
+            width: 90,
             height: 30
         },
         outPorts: ['out'],
@@ -892,7 +910,7 @@ use yii\bootstrap\ActiveForm;
 
     var finish_cell = new joint.shapes.devs.Model({
         size: {
-            width: 190,
+            width: 90,
             height: 30
         },
         inPorts: ['in'],
