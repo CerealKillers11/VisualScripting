@@ -291,8 +291,44 @@ use yii\bootstrap\ActiveForm;
             <script>
                 function setUserFlowToForm() {
                     let succ = graph.getSuccessors(start_cell)[0];
-                    let json_graph_string =JSON.stringify(succ.toJSON());
-                    document.getElementById('inputflowform-flow').setAttribute('value',json_graph_string);
+
+                    // Prepare code of a command
+                    let code = succ.attributes.input_command_code;
+
+                    // Prepare flags of a command, remember that will be space in end of flags string
+                    let flags = "";
+                    flags += succ.attributes.input_flags.reduce(function (acc,flag_str,i) {
+                        if(i===succ.attributes.input_flags.length-1){
+                            acc += flag_str;
+                        }
+                        else{
+                            acc += (flag_str + " ");
+                        }
+                        return acc;
+                    },"");
+
+                    // Achieve params from associative array
+                    let params = "";
+                    let i=0;
+                    for(param in succ.attributes.input_params){
+                        if(i===succ.attributes.input_params.keys().length-1){
+                            params += (succ.attributes.input_params[param]);
+                        }
+                        else{
+                            params += (succ.attributes.input_params[param] + " ");
+                        }
+                    }
+
+                    // Compose the command string
+                    let full_command_string = code;
+                    if(flags.localeCompare("")!=0){
+                        full_command_string+= (" " + flags);
+                    }
+                    if(params.localeCompare("")!=0){
+                        full_command_string+= (" " + params);
+                    }
+
+                    document.getElementById('inputflowform-flow').setAttribute('value',full_command_string);
                     alert("Do you want to build?");
                 }
             </script>

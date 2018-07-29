@@ -28,7 +28,7 @@ $this->registerJsFile($pub2[1], ['depends' => ['yii\web\JqueryAsset']]);
 
     <p>
         This is the Build page. You can see here your prepared script ready to be executed: <br><br>
-        <?php echo var_dump($script); ?>
+        <?php echo $script; ?>
     </p>
 
     <br>
