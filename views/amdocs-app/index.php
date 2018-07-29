@@ -290,12 +290,8 @@ use yii\bootstrap\ActiveForm;
 
             <script>
                 function setUserFlowToForm() {
-                    // let json_graph_string = JSON.stringify(graph.toJSON());
-                    // let json_graph_string =JSON.stringify(graph.getSuccessors(start_cell)[0].toJSON());
                     let succ = graph.getSuccessors(start_cell)[0];
-                    let view = paper.findViewByModel(succ);
-                    let j_view = view.template;
-                    let json_graph_string =JSON.stringify(view.toJSON());
+                    let json_graph_string =JSON.stringify(succ.toJSON());
                     document.getElementById('inputflowform-flow').setAttribute('value',json_graph_string);
                     alert("Do you want to build?");
                 }
@@ -321,7 +317,7 @@ use yii\bootstrap\ActiveForm;
     </div>
     <div class="row">
         <div class="leftcolumn">
-            <div class="library_menu" style="height: 290px;" >
+            <div class="library_menu" style="height: 600px;" >
                 <button class="accordion">Basic Commands</button>
                 <div class="panel">
                     <?php foreach ($basic_commands as $command): ?>
@@ -376,8 +372,8 @@ use yii\bootstrap\ActiveForm;
             </div>
         </div>
 
-        <div class="rightcolumn" id="rightcolumn" style="height: 500px;">
-                <div class="paper_holder" id="paper_holder" style="height: 500px; width:500px;"
+        <div class="rightcolumn" id="rightcolumn" style="height: 600px;">
+                <div class="paper_holder" id="paper_holder"
                      ondragover="allowDrop(event);"
                      ondrop="addElementToGraph(event);"></div>
         </div>
@@ -415,14 +411,15 @@ use yii\bootstrap\ActiveForm;
             }
 
             let parameters_str_arr = [];
+            let splitted_params = [];
             if(!(command_parameters.localeCompare('') == 0)){
 
                 // Parse parameters. Divided with '$'.
-                let arr = command_parameters.split("$");
+                splitted_params = command_parameters.split("$");
                 let i;
-                for(i=1; i<arr.length; i++) {
+                for(i=1; i<splitted_params.length; i++) {
                     parameters_str_arr.push(
-                        '<input type="text" name=\"' + arr[i] + '\" value=\"' + arr[i] + '\" ></input>');
+                        splitted_params[i] + ":" + '<input type="text" name=\"' + splitted_params[i] + '\" value=\"\" ></input>');
                     parameters_str_arr.push('<br/>');
                 }
             }
@@ -488,14 +485,16 @@ use yii\bootstrap\ActiveForm;
                             '<button class="delete">x</button>',
                             '<button class="btn-info">i</button>',
                             '<label></label>',
-                            '<input name="input_variable" type="text" value="$(in)">',
+                            '<br>',
+                            'input:',
+                            '<input name="input_variable" type="text" value="">',
                             '------------------------------------',
                             '<span></span>',
                             '<br/>'].concat(
                             flags_str_arr.concat(
                                 parameters_str_arr.concat(
-                                    ['------------------------------------',
-                                        '<input name="output_variable" type="text" value="$(out)">']
+                                    ['------------------------------------', 'output:',
+                                        '<input name="output_variable" type="text" value="">']
                                 )
                             )
                         )
@@ -527,37 +526,48 @@ use yii\bootstrap\ActiveForm;
                         // First one is always input variable and last one is output variable.
                         // But not in case we dealing with 'for' or 'if'
                         if(command_name.localeCompare('for')==0){
-                            let text_inputs = user_inputs_array.filter(function (input,i,arr) {
-                                return input.type.localeCompare('text') == 0;
-                            });
-                            this.model.set('text_inputs',text_inputs);
+                            let input_params = user_inputs_array.reduce(function (acc,input,i) {
+                                if(input.type.localeCompare('text') == 0){
+                                    acc[input.defaultValue] = input.value;
+                                }
+                                return acc;
+                            }, [] );
+                            this.model.set('input_params',input_params);
 
                         }
                         else if(command_name.localeCompare('if')==0){
                             let output_variable = user_inputs_array[user_inputs_array.length - 1].value;
-                            let text_inputs = user_inputs_array.filter(function (input,i,arr) {
-                                if(i===arr.length-1) return false;
-                                return input.type.localeCompare('text') == 0;
-                            });
-                            this.model.set('output_variable',output_variable);
-                            this.model.set('text_inputs',text_inputs);
+                            let input_params = user_inputs_array.reduce(function (acc,input,i) {
+                                if(i!==user_inputs_array.length-1 && input.type.localeCompare('text') == 0){
+                                    acc[input.defaultValue] = input.value;
+                                }
+                                return acc;
+                            }, [] );
+                            this.model.set('input_var_out',output_variable);
+                            this.model.set('input_params',input_params);
 
                         }
                         else {
                             let input_variable = user_inputs_array[0].value;
                             let output_variable = user_inputs_array[user_inputs_array.length - 1].value;
-                            let flag_checkboxes = user_inputs_array.filter(function (input) {
-                                return input.type.localeCompare('checkbox') == 0;
-                            });
-                            let text_inputs = user_inputs_array.filter(function (input,i,arr) {
-                                if(i===0 || i===arr.length-1) return false;
-                                return input.type.localeCompare('text') == 0;
-                            });
 
-                            this.model.set('input_variable',input_variable);
-                            this.model.set('output_variable',output_variable);
-                            this.model.set('flag_checkboxes',flag_checkboxes);
-                            this.model.set('text_inputs',text_inputs);
+                            let checked_checkboxes = user_inputs_array.reduce(function (acc,input) {
+                                if (input.type.localeCompare('checkbox') == 0 && input.checked) {
+                                    acc.push(input.name);
+                                }
+                                return acc;
+                            }, [] );
+                            let input_params = user_inputs_array.reduce(function (acc,input,i) {
+                                if(i!==0 && i!==user_inputs_array.length-1 && input.type.localeCompare('text') == 0){
+                                    acc[input.defaultValue] = input.value;
+                                }
+                                return acc;
+                            }, [] );
+
+                            this.model.set('input_var_in',input_variable);
+                            this.model.set('input_var_out',output_variable);
+                            this.model.set('input_flags',checked_checkboxes);
+                            this.model.set('input_params',input_params);
                         }
 
                         // Reacting on saving data to model with green border.
@@ -566,6 +576,25 @@ use yii\bootstrap\ActiveForm;
                             borderColor: 'green'
                         });
                     }, this));
+
+                    // Command code is one of prerequisite to build and run
+                    this.model.set('input_command_code',command_code);
+
+                    // Setting the default parameter values
+                    this.model.set('input_var_in',"");
+                    this.model.set('input_var_out',"");
+
+                    // Setting all command params be empty string by default
+                    let default_params = splitted_params.reduce(function (acc,param,i) {
+                        if(i===0) return acc; // Avoid empty string caused by first $ at param string from db
+                        acc[param]="";
+                        return acc;
+                    },[]);
+                    this.model.set('input_params',default_params);
+
+                    // No one of flags is checked at start
+                    this.model.set('input_flags',[]);
+
 
                     // Reacting on the keypress as unsaved data - red border.
                     this.$box.find('input').on('keypress', _.bind(function(evt) {
@@ -623,7 +652,7 @@ use yii\bootstrap\ActiveForm;
             // Vary box sizes depending on command parameters.
             // -----------------------------------------------------------
 
-            let additionalHeight = (flags_str_arr.length-1)*10 + (parameters_str_arr.length-1)*10 + 100;
+            let additionalHeight = (flags_str_arr.length-1)*10 + (parameters_str_arr.length-1)*10 + 160;
 
             // Create JointJS elements and add them to the graph as usual.
             // -----------------------------------------------------------
