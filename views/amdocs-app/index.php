@@ -285,20 +285,86 @@ use yii\bootstrap\ActiveForm;
 
             <?= Html::submitButton('Build', ['class' => 'btn btn-primary',
                 'name' => 'build-button',
-                'onclick' => 'setUserFlowToForm();']) ?>
+                'onclick' => 'return setUserFlowToForm();']) ?>
 
 
             <script>
                 function setUserFlowToForm() {
-                    let succ = graph.getSuccessors(start_cell)[0];
 
-                    // Prepare code of a command
-                    let code = succ.attributes.input_command_code;
+                    // TO-DO :
+                    // Implement check if finish is reachable
 
+
+                    // Collecting user variables - better to define them at start of a script
+                    // and change-on-demand during the flow
+                    let user_variables = [];
+                    let all_cells = graph.getCells(); // Including links
+
+
+                    for(i = 0; i < all_cells.length; i++) {
+                        let graph_element = all_cells[i];
+                        if( !(graph_element === start_cell) && !(graph_element === finish_cell) ) {
+                            if(graph_element.attributes.type.localeCompare("html.Element") == 0 ) {
+                                user_variables[graph_element.attributes.input_var_in] = "";
+                                user_variables[graph_element.attributes.input_var_out] = "";
+                            }
+                        }
+                    }
+                    
+                    // Start may not be either connected
+                    let start_cell_successors = graph.getSuccessors(start_cell);
+                    if(start_cell_successors.length === 0) {
+                        log("build: Start must be connected. Aborting build.");
+                        alert("Start must be connected.")
+                        return false;
+                    }
+
+                    let script = "";
+
+                    let current_cell = start_cell_successors[0];
+                    while(!(current_cell === finish_cell)) {
+
+                        // Prepare code of a command
+                        let code = current_cell.attributes.input_command_code;
+
+                        // Prepare flags
+                        let flags = composeFlags(current_cell);
+
+                        // Achieve params from associative array
+                        let params = composeParams(current_cell);
+
+                        // Compose the command string
+                        let current_command_string = code;
+                        if(flags.localeCompare("")!=0){
+                            current_command_string+= (" " + flags);
+                        }
+                        if(params.localeCompare("")!=0){
+                            current_command_string+= (" " + params);
+                        }
+
+                        script += (current_command_string + "\n");
+
+                        let current_cell_successors = graph.getSuccessors(current_cell);
+                        current_cell = current_cell_successors[0];
+
+                    }
+
+                    // Now we reached the finished cell and the script is ok and ready to be executed
+                    if(script.localeCompare("")==0) {
+                        log("build: Script cannot be empty. Aborting build.")
+                        alert("Script cannot be empty.");
+                        return false;
+                    }
+
+
+                    document.getElementById('inputflowform-flow').setAttribute('value',script);
+                }
+
+                function composeFlags(cell) {
                     // Prepare flags of a command, remember that will be space in end of flags string
                     let flags = "";
-                    flags += succ.attributes.input_flags.reduce(function (acc,flag_str,i) {
-                        if(i===succ.attributes.input_flags.length-1){
+                    flags += cell.attributes.input_flags.reduce(function (acc,flag_str,i) {
+                        if(i===cell.attributes.input_flags.length-1){
                             acc += flag_str;
                         }
                         else{
@@ -306,31 +372,24 @@ use yii\bootstrap\ActiveForm;
                         }
                         return acc;
                     },"");
+                    return flags;
+                }
 
-                    // Achieve params from associative array
+                function composeParams(cell) {
                     let params = "";
                     let i=0;
-                    for(param in succ.attributes.input_params){
-                        if(i===succ.attributes.input_params.keys().length-1){
-                            params += (succ.attributes.input_params[param]);
+                    for(param in cell.attributes.input_params){
+                        if(i===cell.attributes.input_params.keys().length-1){
+                            params += (cell.attributes.input_params[param]);
                         }
                         else{
-                            params += (succ.attributes.input_params[param] + " ");
+                            params += (cell.attributes.input_params[param] + " ");
                         }
                     }
-
-                    // Compose the command string
-                    let full_command_string = code;
-                    if(flags.localeCompare("")!=0){
-                        full_command_string+= (" " + flags);
-                    }
-                    if(params.localeCompare("")!=0){
-                        full_command_string+= (" " + params);
-                    }
-
-                    document.getElementById('inputflowform-flow').setAttribute('value',full_command_string);
-                    alert("Do you want to build?");
+                    return params;
                 }
+
+
             </script>
 
             <?php ActiveForm::end(); ?>
@@ -688,7 +747,7 @@ use yii\bootstrap\ActiveForm;
             // Vary box sizes depending on command parameters.
             // -----------------------------------------------------------
 
-            let additionalHeight = (flags_str_arr.length-1)*10 + (parameters_str_arr.length-1)*10 + 160;
+            let additionalHeight = (flags_str_arr.length-1)*15 + (parameters_str_arr.length-1)*15 + 160;
 
             // Create JointJS elements and add them to the graph as usual.
             // -----------------------------------------------------------
