@@ -260,16 +260,6 @@ use yii\bootstrap\ActiveForm;
             font-size: 10px;
         }
 
-        /*!* port styling *!*/
-        /*.available-magnet {*/
-            /*fill: yellow;*/
-            /*r: 13;*/
-        /*}*/
-
-        /*!* element styling *!*/
-        /*.available-cell rect {*/
-            /*stroke-dasharray: 5, 2;*/
-        /*}*/
     </style>
 
     <div class="row">
@@ -277,55 +267,114 @@ use yii\bootstrap\ActiveForm;
 
             <?php $form = ActiveForm::begin(['id' => 'input-flow-form',
                 'fieldConfig' => ['enableLabel'=>false], // Do not show the labels in view
-                'action' => 'index.php?r=amdocs-app%2Fbuild', //TO-DO pretty urls
+                'action' => 'index.php?r=amdocs-app%2Fexecute', //TO-DO pretty urls
                 'method' => 'post',
             ]); ?>
 
-            <input type="hidden" id="inputflowform-flow" name="InputFlowForm[flow]" value="">
-
-            <?= Html::submitButton('Build', ['class' => 'btn btn-primary',
-                'name' => 'build-button',
-                'onclick' => 'return setUserFlowToForm();']) ?>
-
+            <?= Html::submitButton('Execute', ['class' => 'btn btn-primary',
+                'name' => 'execute-button',
+                ]) ?>
 
             <script>
+
+                // Real execution of commands done on server.
+                // We need to save the flow graph during execution.
+                // So the per-command execution is done via ajax.
+
+                $(document).ready(function () {
+                    $("#input-flow-form").on('beforeSubmit', function () {
+
+
+                        // Collecting user variables - better to define them at start of a script
+                        // and change-on-demand during the flow.
+                        let user_variables = collectUserVariables();
+
+                        // Start may not be either connected
+                        if (!checkStartConnected()) return false;
+
+                        // Starting to build the script.
+                        let script = buildScript(user_variables);
+
+                        // Script can be empty, e.g. Start just connected to Finish.
+                        if(script.localeCompare("")==0) {
+                            log("build: Script cannot be empty. Aborting build.")
+                            alert("Script cannot be empty.");
+                            return false;
+                        }
+
+                        $.ajax({
+                            url: 'index.php?r=amdocs-app%2Fexecute',
+                            type: 'POST',
+                            data: 'script='+script, //POST-style
+                            success: function(res){
+                                console.log(res);
+                            },
+                            error: function(){
+                                alert('Error!');
+                            }
+                        });
+                        return false;
+
+                    });
+                });
+
+
                 function setUserFlowToForm() {
 
                     // TO-DO :
-                    // Implement check if finish is reachable
+                    // Implement check if finish is reachable.
 
 
                     // Collecting user variables - better to define them at start of a script
-                    // and change-on-demand during the flow
-                    let user_variables = [];
-                    let all_cells = graph.getCells(); // Including links
+                    // and change-on-demand during the flow.
+                    let user_variables = collectUserVariables();
 
-
-                    for(i = 0; i < all_cells.length; i++) {
-                        let graph_element = all_cells[i];
-                        if( !(graph_element === start_cell) && !(graph_element === finish_cell) ) {
-                            if(graph_element.attributes.type.localeCompare("html.Element") == 0 ) {
-                                user_variables[graph_element.attributes.input_var_in] = "";
-                                user_variables[graph_element.attributes.input_var_out] = "";
-                            }
-                        }
-                    }
-                    
                     // Start may not be either connected
+                    if (!checkStartConnected()) return false;
+
+                    // Starting to build the script.
+                    let script = buildScript(user_variables);
+
+                    // Script can be empty, e.g. Start just connected to Finish.
+                    if(script.localeCompare("")==0) {
+                        log("build: Script cannot be empty. Aborting build.")
+                        alert("Script cannot be empty.");
+                        return false;
+                    }
+
+
+                    document.getElementById('inputflowform-flow').setAttribute('value',script);
+                }
+
+
+                function checkStartConnected() {
                     let start_cell_successors = graph.getSuccessors(start_cell);
                     if(start_cell_successors.length === 0) {
                         log("build: Start must be connected. Aborting build.");
                         alert("Start must be connected.")
                         return false;
                     }
+                    return true;
+                }
 
-                    let script = "";
+                function buildScript(user_variables) {
+                    let script = "#!/bin/bash" + "\n" + "\n";
 
-                    let current_cell = start_cell_successors[0];
+                    script = setUserVariablesToDefaults(script, user_variables);
+
+                    // During building we'll construct pipeline flows
+                    // which may be outputted to variables.
+                    let pipeline_flow = "";
+
+                    let current_cell = graph.getSuccessors(start_cell)[0];
                     while(!(current_cell === finish_cell)) {
 
                         // Prepare code of a command
                         let code = current_cell.attributes.input_command_code;
+
+                        // If command is a for, need to prepare it well and build
+
+
 
                         // Prepare flags
                         let flags = composeFlags(current_cell);
@@ -336,28 +385,80 @@ use yii\bootstrap\ActiveForm;
                         // Compose the command string
                         let current_command_string = code;
                         if(flags.localeCompare("")!=0){
-                            current_command_string+= (" " + flags);
+                            current_command_string+= (' ' + flags);
                         }
                         if(params.localeCompare("")!=0){
                             current_command_string+= (" " + params);
                         }
 
+                        // Since we use redirecting of input/output,
+                        // we must consider when commands must be pipelined,
+                        // when they must be redirected to variable,
+                        // and when the variable is used as input value.
+
+                        // let input = current_cell.attributes.input_var_in;
+                        // let output = current_cell.attributes.input_var_out;
+                        //
+                        // if(isVariable(input,user_variables) && isVariable(output,user_variables)) {
+                        //     // Building assignment to a variable
+                        //     // Do not forget that variable stored with prefix.
+                        //     script += (output.split("$")[1] + "=$(echo \"" + input  + "\" | " + current_command_string + " )\n");
+                        // }
+                        // else if(!isVariable(input,user_variables) && isVariable(output,user_variables)) {
+                        //     // Input is not a variable, but output is a variable.
+                        //     // Two cases regarding input:
+                        //
+                        //     // Empty string - pipeline output from previous command to input of current.
+                        //     // Here ends the flow of a pipeline
+                        //
+                        //     // Otherwise,
+                        // }
+                        // else if(isVariable(input,user_variables) && !isVariable(output,user_variables)) {
+                        //     // Input is a variable but output isn't.
+                        //     // It means that input variable starts the pipeline which continues to next command.
+                        // }
+                        // else {
+                        //     // Input and output are not variables.
+                        //     // Expected to be a command starting pipeline or in a middle of a pipeline.
+                        // }
+                        //
+                        //
+                        //
+                        //
+                        //
+                        //
+                        //
+
+
+
+
+
                         script += (current_command_string + "\n");
 
                         let current_cell_successors = graph.getSuccessors(current_cell);
+
+                        if(current_cell_successors.length === 0) {
+                            // A case when flow does not connected to finish cell
+                            log("build: Every flow must end at Finish cell. Aborting build.")
+                            alert("Every flow must end at Finish cell.");
+                            return false;
+                        }
                         current_cell = current_cell_successors[0];
-
                     }
+                    // Now we reached the finish cell
+                    return script;
+                }
 
-                    // Now we reached the finished cell and the script is ok and ready to be executed
-                    if(script.localeCompare("")==0) {
-                        log("build: Script cannot be empty. Aborting build.")
-                        alert("Script cannot be empty.");
-                        return false;
+
+                // Script build's helper functions.
+                //-----------------------------------------
+
+                function setUserVariablesToDefaults(script, variables) {
+                    let i=0;
+                    for(i;i<variables.length;i++) {
+                        script += variables[i] + "= \n";
                     }
-
-
-                    document.getElementById('inputflowform-flow').setAttribute('value',script);
+                    return script;
                 }
 
                 function composeFlags(cell) {
@@ -383,11 +484,47 @@ use yii\bootstrap\ActiveForm;
                             params += (cell.attributes.input_params[param]);
                         }
                         else{
-                            params += (cell.attributes.input_params[param] + " ");
+                            params += (cell.attributes.input_params[param] + ' ');
                         }
                     }
                     return params;
                 }
+
+                function collectUserVariables() {
+                    let user_variables = [];
+                    let all_cells = graph.getCells(); // Including links
+
+                    for(i = 0; i < all_cells.length; i++) {
+                        let graph_element = all_cells[i];
+                        if( !(graph_element === start_cell) && !(graph_element === finish_cell) ) {
+                            if(graph_element.attributes.type.localeCompare("html.Element") == 0 ) {
+                                let var_in_arr = graph_element.attributes.input_var_in.split("$");
+                                if(var_in_arr.length > 1 && var_in_arr[0].localeCompare("")==0) {
+                                    user_variables.push(var_in_arr[1]);
+                                }
+
+                                let var_out_arr = graph_element.attributes.input_var_out.split("$");
+                                if(var_out_arr.length > 1 && var_out_arr[0].localeCompare("")==0) {
+                                    user_variables.push(var_out_arr[1]);
+                                }
+                            }
+                        }
+                    }
+                    return user_variables;
+                }
+
+                function isVariable(s,vars) {
+                    let i=0;
+                    for(i;i<vars.length;i++) {
+                        if (("$" + vars[i]).localeCompare(s) == 0) {
+                            return true;
+                        }
+                    }
+                    return false;
+                }
+
+
+                //-----------------------------------------
 
 
             </script>
@@ -396,7 +533,7 @@ use yii\bootstrap\ActiveForm;
         </div>
 
         <div class="col-sm-2">
-            <?= Html::button('Execute', ['id' => 'execute-button',
+            <?= Html::button('Save', ['id' => 'save-button',
                 'class' => 'btn btn-primary']); ?>
         </div>
         <div class="col-lg-1">
@@ -1096,5 +1233,14 @@ use yii\bootstrap\ActiveForm;
 </script>
 
 
+<?php
+$this->registerJs( <<< EOT_JS_CODE
 
+    $('input-flow-form').on('beforeSubmit', function(){
+    alert('Работает!');
+    return false;
+    }); 
 
+EOT_JS_CODE
+);
+?>

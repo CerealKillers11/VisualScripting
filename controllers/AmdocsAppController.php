@@ -29,6 +29,10 @@ class AmdocsAppController extends \yii\web\Controller
 
     public function actionBuild()
     {
+
+        if(Yii::$app->request->isAjax){
+            return 'Запрос принят!';
+        }
         $form = Yii::$app->request->post('BuildForm');
         $test = Yii::$app->request->post('InputFlowForm');
 
@@ -71,6 +75,26 @@ class AmdocsAppController extends \yii\web\Controller
 
         return $this->render('build',['model'=> $model,'script' => $kuku]);
     }
+
+    public function actionExecute(){
+        if(Yii::$app->request->isAjax){
+            $data = Yii::$app->request->post();
+
+
+            $script = $data['script'];
+
+            $o=[];
+            $r=[];
+
+            file_put_contents('command.sh',$script);
+            $output = exec('cd',$o,$r);
+
+            return var_dump($output) + var_dump($o) + var_dump($r);
+        }
+
+
+    }
+
 
     public function actionAddCommand()
     {
