@@ -286,7 +286,7 @@ use yii\bootstrap\ActiveForm;
 
 
                         // Collecting user variables - better to define them at start of a script
-                        // and change-on-demand during the flow.
+                        // and change them on-demand during the flow.
                         let user_variables = collectUserVariables();
 
                         // Start may not be either connected
