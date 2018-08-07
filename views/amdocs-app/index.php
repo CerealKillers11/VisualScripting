@@ -274,261 +274,6 @@ use yii\bootstrap\ActiveForm;
             <?= Html::submitButton('Execute', ['class' => 'btn btn-primary',
                 'name' => 'execute-button',
                 ]) ?>
-
-            <script>
-
-                // Real execution of commands done on server.
-                // We need to save the flow graph during execution.
-                // So the per-command execution is done via ajax.
-
-                $(document).ready(function () {
-                    $("#input-flow-form").on('beforeSubmit', function () {
-
-
-                        // Collecting user variables - better to define them at start of a script
-                        // and change them on-demand during the flow.
-                        let user_variables = collectUserVariables();
-
-                        // Start may not be either connected
-                        if (!checkStartConnected()) return false;
-
-                        // Starting to build the script.
-                        let script = buildScript(user_variables);
-
-                        // Script can be empty, e.g. Start just connected to Finish.
-                        if(script.localeCompare("")==0) {
-                            log("build: Script cannot be empty. Aborting build.")
-                            alert("Script cannot be empty.");
-                            return false;
-                        }
-
-                        $.ajax({
-                            url: 'index.php?r=amdocs-app%2Fexecute',
-                            type: 'POST',
-                            data: 'script='+script, //POST-style
-                            success: function(res){
-                                console.log(res);
-                            },
-                            error: function(){
-                                alert('Error!');
-                            }
-                        });
-                        return false;
-
-                    });
-                });
-
-
-                function setUserFlowToForm() {
-
-                    // TO-DO :
-                    // Implement check if finish is reachable.
-
-
-                    // Collecting user variables - better to define them at start of a script
-                    // and change-on-demand during the flow.
-                    let user_variables = collectUserVariables();
-
-                    // Start may not be either connected
-                    if (!checkStartConnected()) return false;
-
-                    // Starting to build the script.
-                    let script = buildScript(user_variables);
-
-                    // Script can be empty, e.g. Start just connected to Finish.
-                    if(script.localeCompare("")==0) {
-                        log("build: Script cannot be empty. Aborting build.")
-                        alert("Script cannot be empty.");
-                        return false;
-                    }
-
-
-                    document.getElementById('inputflowform-flow').setAttribute('value',script);
-                }
-
-
-                function checkStartConnected() {
-                    let start_cell_successors = graph.getSuccessors(start_cell);
-                    if(start_cell_successors.length === 0) {
-                        log("build: Start must be connected. Aborting build.");
-                        alert("Start must be connected.")
-                        return false;
-                    }
-                    return true;
-                }
-
-                function buildScript(user_variables) {
-                    let script = "#!/bin/bash" + "\n" + "\n";
-
-                    script = setUserVariablesToDefaults(script, user_variables);
-
-                    // During building we'll construct pipeline flows
-                    // which may be outputted to variables.
-                    let pipeline_flow = "";
-
-                    let current_cell = graph.getSuccessors(start_cell)[0];
-                    while(!(current_cell === finish_cell)) {
-
-                        // Prepare code of a command
-                        let code = current_cell.attributes.input_command_code;
-
-                        // If command is a for, need to prepare it well and build
-
-
-
-                        // Prepare flags
-                        let flags = composeFlags(current_cell);
-
-                        // Achieve params from associative array
-                        let params = composeParams(current_cell);
-
-                        // Compose the command string
-                        let current_command_string = code;
-                        if(flags.localeCompare("")!=0){
-                            current_command_string+= (' ' + flags);
-                        }
-                        if(params.localeCompare("")!=0){
-                            current_command_string+= (" " + params);
-                        }
-
-                        // Since we use redirecting of input/output,
-                        // we must consider when commands must be pipelined,
-                        // when they must be redirected to variable,
-                        // and when the variable is used as input value.
-
-                        // let input = current_cell.attributes.input_var_in;
-                        // let output = current_cell.attributes.input_var_out;
-                        //
-                        // if(isVariable(input,user_variables) && isVariable(output,user_variables)) {
-                        //     // Building assignment to a variable
-                        //     // Do not forget that variable stored with prefix.
-                        //     script += (output.split("$")[1] + "=$(echo \"" + input  + "\" | " + current_command_string + " )\n");
-                        // }
-                        // else if(!isVariable(input,user_variables) && isVariable(output,user_variables)) {
-                        //     // Input is not a variable, but output is a variable.
-                        //     // Two cases regarding input:
-                        //
-                        //     // Empty string - pipeline output from previous command to input of current.
-                        //     // Here ends the flow of a pipeline
-                        //
-                        //     // Otherwise,
-                        // }
-                        // else if(isVariable(input,user_variables) && !isVariable(output,user_variables)) {
-                        //     // Input is a variable but output isn't.
-                        //     // It means that input variable starts the pipeline which continues to next command.
-                        // }
-                        // else {
-                        //     // Input and output are not variables.
-                        //     // Expected to be a command starting pipeline or in a middle of a pipeline.
-                        // }
-                        //
-                        //
-                        //
-                        //
-                        //
-                        //
-                        //
-
-
-
-
-
-                        script += (current_command_string + "\n");
-
-                        let current_cell_successors = graph.getSuccessors(current_cell);
-
-                        if(current_cell_successors.length === 0) {
-                            // A case when flow does not connected to finish cell
-                            log("build: Every flow must end at Finish cell. Aborting build.")
-                            alert("Every flow must end at Finish cell.");
-                            return false;
-                        }
-                        current_cell = current_cell_successors[0];
-                    }
-                    // Now we reached the finish cell
-                    return script;
-                }
-
-
-                // Script build's helper functions.
-                //-----------------------------------------
-
-                function setUserVariablesToDefaults(script, variables) {
-                    let i=0;
-                    for(i;i<variables.length;i++) {
-                        script += variables[i] + "= \n";
-                    }
-                    return script;
-                }
-
-                function composeFlags(cell) {
-                    // Prepare flags of a command, remember that will be space in end of flags string
-                    let flags = "";
-                    flags += cell.attributes.input_flags.reduce(function (acc,flag_str,i) {
-                        if(i===cell.attributes.input_flags.length-1){
-                            acc += flag_str;
-                        }
-                        else{
-                            acc += (flag_str + " ");
-                        }
-                        return acc;
-                    },"");
-                    return flags;
-                }
-
-                function composeParams(cell) {
-                    let params = "";
-                    let i=0;
-                    for(param in cell.attributes.input_params){
-                        if(i===cell.attributes.input_params.keys().length-1){
-                            params += (cell.attributes.input_params[param]);
-                        }
-                        else{
-                            params += (cell.attributes.input_params[param] + ' ');
-                        }
-                    }
-                    return params;
-                }
-
-                function collectUserVariables() {
-                    let user_variables = [];
-                    let all_cells = graph.getCells(); // Including links
-
-                    for(i = 0; i < all_cells.length; i++) {
-                        let graph_element = all_cells[i];
-                        if( !(graph_element === start_cell) && !(graph_element === finish_cell) ) {
-                            if(graph_element.attributes.type.localeCompare("html.Element") == 0 ) {
-                                let var_in_arr = graph_element.attributes.input_var_in.split("$");
-                                if(var_in_arr.length > 1 && var_in_arr[0].localeCompare("")==0) {
-                                    user_variables.push(var_in_arr[1]);
-                                }
-
-                                let var_out_arr = graph_element.attributes.input_var_out.split("$");
-                                if(var_out_arr.length > 1 && var_out_arr[0].localeCompare("")==0) {
-                                    user_variables.push(var_out_arr[1]);
-                                }
-                            }
-                        }
-                    }
-                    return user_variables;
-                }
-
-                function isVariable(s,vars) {
-                    let i=0;
-                    for(i;i<vars.length;i++) {
-                        if (("$" + vars[i]).localeCompare(s) == 0) {
-                            return true;
-                        }
-                    }
-                    return false;
-                }
-
-
-                //-----------------------------------------
-
-
-            </script>
-
             <?php ActiveForm::end(); ?>
         </div>
 
@@ -791,7 +536,7 @@ use yii\bootstrap\ActiveForm;
                             }, [] );
                             let input_params = user_inputs_array.reduce(function (acc,input,i) {
                                 if(i!==0 && i!==user_inputs_array.length-1 && input.type.localeCompare('text') == 0){
-                                    acc[input.defaultValue] = input.value;
+                                    acc[input.name] = input.value;
                                 }
                                 return acc;
                             }, [] );
@@ -1030,8 +775,8 @@ use yii\bootstrap\ActiveForm;
 
 <script>
 
-    /**########### Initial - done at start ###################*/
-    /**## Place here all scrips which is used per document ##*/
+    /**########### Initial - done at start ###########################*/
+    /**## Place here all scrips which is used per document at start ##*/
 
     let acc = document.getElementsByClassName("accordion");
     let i;
@@ -1230,17 +975,217 @@ use yii\bootstrap\ActiveForm;
     Logger.show();
     log("This is log!");
 
+
+    /**########### Execution process ###########################*/
+
+    // Real execution of commands done on server.
+    // We need to save the flow graph during execution.
+    // So the per-command execution is done via ajax.
+
+    // At start, we actually need to start a flow from start cell.
+    var current_cell = start_cell;
+
+    // User variables are changed during the execution, we need to save
+    // them during the execution of commands.
+    // This is associative array.
+    var user_variables = [];
+
+
+    $(document).ready(function () {
+        $("#input-flow-form").on('beforeSubmit', function () {
+
+
+            // Collecting user variables - better to define them at start of a script
+            // and change them on-demand during the flow.
+            // At start, all of them are empty strings.
+            if(current_cell === start_cell) {
+                user_variables = collectUserVariables();
+                let start_cell_successors = graph.getSuccessors(start_cell);
+                if(start_cell_successors.length === 0) {
+                    log("build: Start must be connected. Aborting build.");
+                    alert("Start must be connected.");
+                    return false;
+                }
+                else {
+                    current_cell = start_cell_successors[0];
+                }
+            }
+
+            /** Try to execute one command - current cell,
+             * and move to next. What is included in execution:
+             * 1) Collect variables from model, take input value from our array.
+             * 2) Construct a command inside small script - described later.
+             * 3) Send command to server via AJAX with script as parameter.
+             * 4) Execute command on a server and take return value and output.
+             * 5) Print the output to a log
+             * 6) Save variables in our array*/
+
+
+            /** At first, taking input of current cell*/
+            /** Input can be not only a variable, also some value. */
+
+            let input = "";
+            let splitted = current_cell.attributes.input_var_in.split("$");
+
+            if(splitted.length > 1 && splitted[0].localeCompare("")===0) {
+
+                /** This is variable because starts from $ */
+                input =  user_variables[ splitted[1] ];
+            }
+            else {
+
+                /** This is just a some user value.
+                 * User values must not contain dollars */
+                input = splitted[0];
+            }
+
+            /** Constructing the current command's script. */
+            let script = buildCommandScript(input);
+
+            /** Sending the script to a server via AJAX */
+
+            $.ajax({
+                url: 'index.php?r=amdocs-app%2Fexecute',
+                type: 'POST',
+                data: 'script='+script, //POST-style
+                success: function(res){
+                    console.log(res);
+                    log("Command execution returned: " + res);
+                },
+                error: function(){
+                    alert('Error!');
+                }
+            });
+
+            // let current_cell_successors = graph.getSuccessors(current_cell);
+            //
+            // if(current_cell_successors.length === 0) {
+            //     // A case when flow does not connected to finish cell
+            //     log("build: Every flow must end at Finish cell. Aborting build.")
+            //     alert("Every flow must end at Finish cell.");
+            //     return false;
+            // }
+
+            return false;
+
+        });
+    });
+
+
+    function buildCommandScript(input) {
+        // Bash script preamble
+        let script = "#!/bin/bash" + "\n" + "\n";
+
+        // Prepare code of a command
+        let code = current_cell.attributes.input_command_code;
+
+        if(code.localeCompare('for')===0) {
+
+        }
+        else if(code.localeCompare('if')===0) {
+
+        }
+        else {
+
+            /** Other command, with classic structure. */
+
+            // Prepare flags
+            let flags = composeFlags(current_cell);
+
+            // Achieve params from associative array inside cell model
+            let params = composeParams(current_cell);
+
+            // Compose the command string
+            let current_command_string = code;
+            if(flags.localeCompare("")!=0){
+                current_command_string+= (" " + flags);
+            }
+            if(params.localeCompare("")!=0){
+                current_command_string+= (" " + params);
+            }
+
+            /** Structure of such a command is like this:
+
+             #!/bin/bash
+
+             x="Value of input variable"
+
+             echo "$x" | current_command_string
+
+             And its output will be assigned to output variable.
+
+             */
+
+            script += "x=\""+ input + "\"\n";
+            script += "echo \"$x\" | " + current_command_string;
+
+            return script;
+        }
+    }
+
+
+    // Script build's helper functions.
+    //-----------------------------------------
+
+    function composeFlags(cell) {
+        // Prepare flags of a command, remember that will be space in end of flags string
+        let flags = "";
+        flags += cell.attributes.input_flags.reduce(function (acc,flag_str,i) {
+            if(i===cell.attributes.input_flags.length-1){
+                acc += flag_str;
+            }
+            else{
+                acc += (flag_str + " ");
+            }
+            return acc;
+        },"");
+        return flags;
+    }
+
+    function composeParams(cell) {
+        let params = "";
+        let i=0;
+        for(param in cell.attributes.input_params){
+            let keys = Object.keys(cell.attributes.input_params);
+            if(i===keys.length-1){
+                params += (cell.attributes.input_params[param]);
+            }
+            else{
+                params += (cell.attributes.input_params[param] + ' ');
+            }
+            i++;
+        }
+        return params;
+    }
+
+    function collectUserVariables() {
+        let user_variables = [];
+        let all_cells = graph.getCells(); // Including links
+
+        for(i = 0; i < all_cells.length; i++) {
+            let graph_element = all_cells[i];
+            if( !(graph_element === start_cell) && !(graph_element === finish_cell) ) {
+                if(graph_element.attributes.type.localeCompare("html.Element") == 0 ) {
+                    let var_in_arr = graph_element.attributes.input_var_in.split("$");
+                    if(var_in_arr.length > 1 && var_in_arr[0].localeCompare("")==0) {
+                        user_variables[var_in_arr[1]] = "";
+                    }
+
+                    let var_out_arr = graph_element.attributes.input_var_out.split("$");
+                    if(var_out_arr.length > 1 && var_out_arr[0].localeCompare("")==0) {
+                        user_variables[var_out_arr[1]] = "";
+                    }
+                }
+            }
+        }
+        return user_variables;
+    }
+
+    //-----------------------------------------
+
+
 </script>
 
 
-<?php
-$this->registerJs( <<< EOT_JS_CODE
 
-    $('input-flow-form').on('beforeSubmit', function(){
-    alert('Работает!');
-    return false;
-    }); 
 
-EOT_JS_CODE
-);
-?>

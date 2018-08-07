@@ -81,15 +81,13 @@ class AmdocsAppController extends \yii\web\Controller
             $data = Yii::$app->request->post();
 
 
-            $script = $data['script'];
+            $command_script = $data['script'];
 
-            $o=[];
-            $r=[];
+            file_put_contents('command.sh',$command_script);
+            $output = shell_exec($command_script);
+            if($output == null) return '';
 
-            file_put_contents('command.sh',$script);
-            $output = exec('cd',$o,$r);
-
-            return var_dump($output) + var_dump($o) + var_dump($r);
+            return $output;
         }
 
 
