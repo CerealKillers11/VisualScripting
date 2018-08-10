@@ -448,8 +448,8 @@ use yii\bootstrap\ActiveForm;
                     '<br/>'].concat(
                         flags_str_arr.concat(
                             parameters_str_arr.concat(
-                                ['------------------------------------',
-                                    '<input name="output_variable" type="text" value="$(out)">']
+                                ['------------------------------------', 'output:',
+                                    '<input name="output_variable" type="text" value="">']
                             )
                         )
                     )
@@ -973,8 +973,7 @@ use yii\bootstrap\ActiveForm;
 
     //Add a logger
     Logger.show();
-    log("This is log!");
-
+    Logger.toggle();
 
     /**########### Execution process ###########################*/
 
@@ -999,11 +998,10 @@ use yii\bootstrap\ActiveForm;
             // and change them on-demand during the flow.
             // At start, all of them are empty strings.
             if(current_cell === start_cell) {
-                user_variables = collectUserVariables();
-                let start_cell_successors = graph.getSuccessors(start_cell);
+                collectUserVariables();
+                let start_cell_successors = graph.getNeighbors(start_cell);
                 if(start_cell_successors.length === 0) {
-                    log("build: Start must be connected. Aborting build.");
-                    alert("Start must be connected.");
+                    log("Error: Start must be connected. Aborting execution.");
                     return false;
                 }
                 else {
@@ -1025,102 +1023,273 @@ use yii\bootstrap\ActiveForm;
             /** Input can be not only a variable, also some value. */
 
             let input = "";
-            let splitted = current_cell.attributes.input_var_in.split("$");
+            let splitted_input = current_cell.attributes.input_var_in.split("$");
 
-            if(splitted.length > 1 && splitted[0].localeCompare("")===0) {
+            if(splitted_input.length > 1 && splitted_input[0].localeCompare("")===0) {
 
                 /** This is variable because starts from $ */
-                input =  user_variables[ splitted[1] ];
+                input =  user_variables[ splitted_input[1] ];
             }
             else {
 
-                /** This is just a some user value.
-                 * User values must not contain dollars */
-                input = splitted[0];
+                /** This is just a some user value, not variable.
+                 * User values must not contain dollars! */
+                input = splitted_input[0];
             }
 
             /** Constructing the current command's script. */
-            let script = buildCommandScript(input);
+            let script = "";
+
+            let code = current_cell.attributes.input_command_code;
+            if(code.localeCompare("if") === 0) {
+                script = buildIfCommandScript();
+            }
+            else if(code.localeCompare("for") === 0) {
+
+            }
+            else {
+                script = buildOtherCommandScript(input);
+            }
 
             /** Sending the script to a server via AJAX */
 
             $.ajax({
                 url: 'index.php?r=amdocs-app%2Fexecute',
                 type: 'POST',
-                data: 'script='+script, //POST-style
+                data: 'script='+ script + '&'+'code='+code, //POST-style
                 success: function(res){
-                    console.log(res);
-                    log("Command execution returned: " + res);
+
+                    /** Cut the possible \n at end of result */
+                    if(res.charAt(res.length-1) === '\n') {
+                        res = res.slice(0,res.length-1);
+                    }
+
+
+                    let code = current_cell.attributes.input_command_code;
+
+                    let log_output = (res.localeCompare("")===0)?
+
+                        "Executed command: " + code + ", no output"
+                                            :
+                        "Executed command: " + code + ", output: " + res;
+
+                    log(log_output);
+
+                    /** Now need to assign the output variable, if was. */
+                    assignVariableFromOutput(res);
+
+                    /** Go to next command. Decide based on connected ports. */
+                    moveToNextCommand(res);
+
                 },
                 error: function(){
                     alert('Error!');
                 }
             });
 
-            // let current_cell_successors = graph.getSuccessors(current_cell);
-            //
-            // if(current_cell_successors.length === 0) {
-            //     // A case when flow does not connected to finish cell
-            //     log("build: Every flow must end at Finish cell. Aborting build.")
-            //     alert("Every flow must end at Finish cell.");
-            //     return false;
-            // }
-
+            /** We don't really going to send a form - avoiding refreshing of page */
             return false;
 
         });
     });
 
 
-    function buildCommandScript(input) {
+    function buildOtherCommandScript(input) {
+
         // Bash script preamble
         let script = "#!/bin/bash" + "\n" + "\n";
 
         // Prepare code of a command
         let code = current_cell.attributes.input_command_code;
 
-        if(code.localeCompare('for')===0) {
+        /** Other command, with classic structure. */
+
+        // Prepare flags
+        let flags = composeFlags(current_cell);
+
+        // Achieve params from associative array inside cell model
+        let params = composeParams(current_cell);
+
+        // Compose the command string
+        let current_command_string = code;
+        if(flags.localeCompare("")!=0){
+            current_command_string+= (" " + flags);
+        }
+        if(params.localeCompare("")!=0){
+            current_command_string+= (" " + params);
+        }
+
+        /** Structure of such a command is like this:
+
+         #!/bin/bash
+
+         x="Value of input variable"
+
+         echo "$x" | current_command_string
+
+         And its output will be assigned to output variable.
+
+         */
+
+        script += "x=\""+ input + "\" \n";
+        script += "echo \"$x\" | " + current_command_string;
+
+        return script;
+    }
+
+    function buildIfCommandScript() {
+
+        /** Decision is made with PHP's eval() on a server side.
+         * Condition can be written as comparison,
+         * including logical operators.
+         * Comparison is made for strings and variables.*/
+
+        // The only param of 'if' is a condition
+        let condition = composeParams(current_cell);
+
+        let regex = /([()=<>&| "])/;
+
+        /** Need to prepare variables.*/
+        let splitted_condition = condition.split(regex);
+
+        let vars_from_condition = [];
+
+        for(i=0;i<splitted_condition.length;i++) {
+            if(splitted_condition[i].startsWith("$") && !vars_from_condition.includes(splitted_condition[i],0)) {
+                vars_from_condition.push(splitted_condition[i]);
+            }
+        }
+
+        /** These variables are with '$' at start - need to cut */
+        for(i=0;i<vars_from_condition.length;i++) {
+            vars_from_condition[i] = vars_from_condition[i].replace("$","");
+        }
+
+        /** If one of condition's variables is not defined yet,
+         * add it automatically as empty string, but log a warning.*/
+        for(i=0;i<vars_from_condition.length;i++) {
+            if(!Object.keys(user_variables).includes(vars_from_condition[i])) {
+                user_variables[vars_from_condition[i]] = "";
+                log("Warning: variable $" + vars_from_condition[i] + " was not defined before.");
+                log("Warning: auto-assigning variable $" + vars_from_condition[i] + " to \"\".");
+            }
+        }
+
+        /** Prepare a string with definition of variables */
+        let string_to_eval = "";
+        for(i=0;i<vars_from_condition.length;i++) {
+            for(let v in user_variables) {
+                if(v.localeCompare(vars_from_condition[i]) === 0) {
+                    string_to_eval += "$" + v + " = " + "\"" + user_variables[v] + "\"" + ";\n"
+                }
+            }
+        }
+
+        string_to_eval += "return (" + condition + ");";
+
+        /** Here the issue is that post-type request uses '&' char.
+         * Replace the '&' with '#' in conditional to sent via post. */
+
+        string_to_eval = string_to_eval.replace("&&","##");
+
+        return string_to_eval;
+    }
+
+    function assignVariableFromOutput(res) {
+        let var_out = current_cell.attributes.input_var_out;
+
+        if(var_out.localeCompare("")!==0) {
+            /** User defined variable to assign output to it */
+            let splitted_output = var_out.split("$");
+
+            if(splitted_output.length > 1 && splitted_output[0].localeCompare("")===0) {
+
+                /** This is variable because starts from $. Ok, assign and save. */
+                user_variables[ splitted_output[1] ] = res;
+                log("Variable assigned: " + var_out + " = \"" + res + "\"");
+
+            }
+            else if (splitted_output[0].localeCompare("")===0) {
+                /** Do nothing, user don't need an assignment of variable. */
+            }
+            else {
+                /** Output can be variable or nothing! Error!*/
+                log("Warning: cannot assign execution output to non-variable " + "\"" + var_out + "\"");
+            }
+        }
+    }
+
+    function moveToNextCommand(res) {
+        /** Move to the next command.
+         * In case of loop and if we need to make decisions based on ports.*/
+        let out_neighbors = graph.getNeighbors(current_cell, { outbound : true });
+
+        console.log("");
+
+        let code = current_cell.attributes.input_command_code;
+
+        if(out_neighbors.length === 0) {
+            // A case when flow does not connected to finish cell
+            log("Warning: unexpected end of flow - not connected to finish cell!");
+            log("Warning: Next execution will continue from start cell");
+            current_cell = start_cell;
+        }
+        else if (out_neighbors.length === 1) {
+
+            /** Case of a standard command with
+             * one connected out port */
+
+            /** It may be 'if' with only one connected port!
+             * But two links to a same cell is ok*/
+            if((code.localeCompare("if") === 0)) {
+                let links = graph.getConnectedLinks(current_cell, { outbound: true });
+                if(links.length < 2) {
+                    log("Error: one of ports of 'if' command is not connected!");
+                    log("Warning: Next execution will continue from start cell");
+                    current_cell = start_cell;
+                }
+            }
+
+            /** Successor can be a finish cell*/
+            if(finish_cell === out_neighbors[0]) {
+                log("Finish cell reached during execution!");
+                log("Execution can be continued from start cell");
+                current_cell = start_cell;
+            }
+            else {
+                /** Move to a next cell*/
+                current_cell = out_neighbors[0];
+            }
 
         }
-        else if(code.localeCompare('if')===0) {
-
+        else if (out_neighbors.length === 2) {
+            /** That is the 'if' case.*/
+            if (code.localeCompare("if") === 0) {
+                if(res.localeCompare("true") === 0) {
+                    /** True */
+                    current_cell = out_neighbors[0];
+                }
+                else {
+                    /** False */
+                    current_cell = out_neighbors[1];
+                }
+            }
+            else {
+                /** Cell with two outbound links which is not 'if' is error. */
+                log("Error: out port cannot be connected with two links!");
+                log("Warning: Next execution will continue from start cell");
+                current_cell = start_cell;
+            }
         }
         else {
-
-            /** Other command, with classic structure. */
-
-            // Prepare flags
-            let flags = composeFlags(current_cell);
-
-            // Achieve params from associative array inside cell model
-            let params = composeParams(current_cell);
-
-            // Compose the command string
-            let current_command_string = code;
-            if(flags.localeCompare("")!=0){
-                current_command_string+= (" " + flags);
-            }
-            if(params.localeCompare("")!=0){
-                current_command_string+= (" " + params);
-            }
-
-            /** Structure of such a command is like this:
-
-             #!/bin/bash
-
-             x="Value of input variable"
-
-             echo "$x" | current_command_string
-
-             And its output will be assigned to output variable.
-
-             */
-
-            script += "x=\""+ input + "\"\n";
-            script += "echo \"$x\" | " + current_command_string;
-
-            return script;
+            /** No case where more than two outbound links can be*/
+            log("Error: too much outbound links for command " +
+                "\"" + code + "\"" + "!");
+            log("Warning: Next execution will continue from start cell");
+            current_cell = start_cell;
         }
+        /** Print an empty string between the executions of commands*/
+        log();
     }
 
 
@@ -1159,26 +1328,40 @@ use yii\bootstrap\ActiveForm;
     }
 
     function collectUserVariables() {
-        let user_variables = [];
         let all_cells = graph.getCells(); // Including links
 
         for(i = 0; i < all_cells.length; i++) {
             let graph_element = all_cells[i];
+
+            /** Start and finish cells cannot have variables*/
             if( !(graph_element === start_cell) && !(graph_element === finish_cell) ) {
-                if(graph_element.attributes.type.localeCompare("html.Element") == 0 ) {
+
+                /** Avoid links, only cells*/
+                if(graph_element.attributes.type.localeCompare("html.Element") === 0 ) {
                     let var_in_arr = graph_element.attributes.input_var_in.split("$");
-                    if(var_in_arr.length > 1 && var_in_arr[0].localeCompare("")==0) {
-                        user_variables[var_in_arr[1]] = "";
+
+                    /** Get only variables, not user string inputs*/
+                    if(var_in_arr.length > 1 && var_in_arr[0].localeCompare("") === 0) {
+
+                        /** Avoid reassignment of variables gotten from previous execution */
+                        if(!Object.keys(user_variables).includes(var_in_arr[1])) {
+                            user_variables[var_in_arr[1]] = "";
+                        }
                     }
 
                     let var_out_arr = graph_element.attributes.input_var_out.split("$");
-                    if(var_out_arr.length > 1 && var_out_arr[0].localeCompare("")==0) {
-                        user_variables[var_out_arr[1]] = "";
+
+                    /** Get only variables, not user string inputs*/
+                    if(var_out_arr.length > 1 && var_out_arr[0].localeCompare("") === 0) {
+
+                        /** Avoid reassignment of variables gotten from previous execution */
+                        if(!Object.keys(user_variables).includes(var_out_arr[1])) {
+                            user_variables[var_out_arr[1]] = "";
+                        }
                     }
                 }
             }
         }
-        return user_variables;
     }
 
     //-----------------------------------------

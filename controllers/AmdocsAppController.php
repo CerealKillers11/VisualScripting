@@ -76,21 +76,33 @@ class AmdocsAppController extends \yii\web\Controller
         return $this->render('build',['model'=> $model,'script' => $kuku]);
     }
 
+
+
     public function actionExecute(){
         if(Yii::$app->request->isAjax){
             $data = Yii::$app->request->post();
 
 
             $command_script = $data['script'];
+            $code = $data['code'];
 
-            file_put_contents('command.sh',$command_script);
-            $output = shell_exec($command_script);
-            if($output == null) return '';
+            if($code == 'if') {
 
-            return $output;
+                $replaced_script = str_replace("#","&",$command_script);
+                $output = eval($replaced_script);
+                if ($output == 1)
+                {
+                    return "true";
+                }
+                return "false";
+            }
+            else {
+                file_put_contents('command.sh',$command_script);
+                $output = shell_exec($command_script);
+                if($output == null) return '';
+                return $output;
+            }
         }
-
-
     }
 
 
