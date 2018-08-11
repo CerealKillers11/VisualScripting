@@ -76,7 +76,7 @@ use yii\bootstrap\ActiveForm;
 
             width: 75%;
             background-color: #f1f1f1;
-            padding-left: 20px;
+            /*padding-left: 20px;*/
             overflow: scroll;
         }
 
@@ -93,8 +93,12 @@ use yii\bootstrap\ActiveForm;
         /* Clear floats after the columns */
         .row:after {
             content: "";
-            display: table;
+            display: inline;
             clear: both;
+        }
+
+        .row {
+            padding-bottom: 10px;
         }
 
         /* Responsive layout - when the screen is less than 800px wide, make the two columns stack on top of each other instead of next to each other */
@@ -263,8 +267,8 @@ use yii\bootstrap\ActiveForm;
     </style>
 
     <div class="row">
-        <div class="col-sm-1">
 
+        <div class="col-sm-1">
             <?php $form = ActiveForm::begin(['id' => 'input-flow-form',
                 'fieldConfig' => ['enableLabel'=>false], // Do not show the labels in view
                 'action' => 'index.php?r=amdocs-app%2Fexecute', //TO-DO pretty urls
@@ -273,23 +277,38 @@ use yii\bootstrap\ActiveForm;
 
             <?= Html::submitButton('Execute', ['class' => 'btn btn-primary',
                 'name' => 'execute-button',
-                ]) ?>
+            ]) ?>
             <?php ActiveForm::end(); ?>
+
         </div>
 
-        <div class="col-sm-2">
-            <?= Html::button('Save', ['id' => 'save-button',
-                'class' => 'btn btn-primary']); ?>
-        </div>
-        <div class="col-lg-1">
-            <p>
-                Execution path:
-            </p>
-        </div>
 
-        <div class="col-sm-1">
-            <input id="execution_path" type="text" value="<?php echo getcwd(); ?>" size="80">
-        </div>
+        <text>Execution path:</text>
+
+        <input id="execution_path" type="text" value="<?php echo getcwd(); ?>" size="30">
+
+        <?= Html::button('Save as command', ['id' => 'save-command-button',
+            'class' => 'btn btn-primary']); ?>
+
+        <?= Html::button('Save as flow', ['id' => 'save-flow-button',
+            'class' => 'btn btn-primary']); ?>
+
+        <?= Html::button('Load flow', ['id' => 'load-flow-button',
+            'class' => 'btn btn-primary']); ?>
+
+        <?= Html::button('Clear flow', ['id' => 'clear-flow-button',
+            'class' => 'btn btn-primary']); ?>
+
+
+
+
+
+
+
+
+
+
+
 
     </div>
     <div class="row">
@@ -679,7 +698,7 @@ use yii\bootstrap\ActiveForm;
                     position: { x:20, y: 20 },
                     size: {
                         width: 190,
-                        height: 70
+                        height: 90
                     },
                     inPorts: ['in'],
                     outPorts: ['loop','continue'],
@@ -809,11 +828,57 @@ use yii\bootstrap\ActiveForm;
         }
     });
 
+    $("#save-flow-button").click( function() {
+        let str_graph = JSON.stringify(graph.toJSON());
+
+        $.ajax({
+            url: 'index.php?r=amdocs-app%2Fsave-flow',
+            type: 'POST',
+            data: 'graph='+ str_graph, //POST-style
+            success: function(res){
+                alert("Server respond: " + res);
+            },
+            error: function(){
+                alert("Unable to save flow!");
+            }
+        });
+    });
+
+    $("#load-flow-button").click( function() {
+        $.ajax({
+            url: 'index.php?r=amdocs-app%2Fload-flow',
+            type: 'POST',
+            data: '', //POST-style
+            success: function(str_graph){
+                graph.clear();
+                graph.fromJSON(JSON.parse(str_graph));
+            },
+            error: function(){
+                alert("Unable to save flow!");
+            }
+        });
+
+    });
+
+    $("#clear-flow-button").click( function() {
+        graph.clear();
+
+        start_cell = createStartCell();
+        start_cell.position(350, 30);
+        graph.addCell(start_cell);
+
+        finish_cell = createFinishCell();
+        finish_cell.position(350, 400);
+        graph.addCell(finish_cell);
+
+        current_cell = start_cell;
+    });
+
 
     // Override dia.Link class for enabling to see the arrow cursor and disable double marking.
     joint.dia.Link = joint.dia.Link.extend({
         defaults: joint.util.deepSupplement({
-            type: 'dia.Link',
+            type: 'link',
             markup: [
                 '<path class="connection" stroke="black" d="M 0 0 0 0"/>',
                 '<path class="marker-source" fill="orange" stroke="black" d="M 0 0 0 0"/>',
@@ -887,65 +952,13 @@ use yii\bootstrap\ActiveForm;
 
     });
 
-    var start_cell = new joint.shapes.devs.Model({
-        size: {
-            width: 90,
-            height: 30
-        },
-        outPorts: ['out'],
-        ports: {
-            groups: {
-                'out': {
-                    position: 'bottom',
-                    attrs: {
-                        '.port-body': {
-                            fill: '#E74C3C'
-                        },
-                    }
-                }
-            }
-        },
-        attrs: {
-            '.label': { text: 'Start', fill: 'black',  'ref-y': 5},
-            rect: { fill: 'orange' }
-        }
-    });
-
+    var start_cell = createStartCell();
     start_cell.position(350, 30);
     graph.addCell(start_cell);
 
-    var finish_cell = new joint.shapes.devs.Model({
-        size: {
-            width: 90,
-            height: 30
-        },
-        inPorts: ['in'],
-        ports: {
-            groups: {
-                'in': {
-                    position: 'top',
-                    attrs: {
-                        '.port-body': {
-                            fill: '#16A085',
-                            magnet: 'passive'
-                        },
-                    },
-                    label: {
-                        position: {
-                            name: 'right',
-                            args: { y: -10 } // extra arguments for the label layout function, see `layout.PortLabel` section
-                        }
-                    },
-                },
-            }
-        },
-        attrs: {
-            '.label': { text: 'Finish', fill: 'black',  'ref-y': 15 },
-            rect: { fill: 'orange' }
-        }
-    });
+    var finish_cell = createFinishCell();
     finish_cell.position(350, 400);
-    finish_cell.addTo(graph);
+    graph.addCell(finish_cell);
 
     var paper_scale = 1;
 
@@ -974,6 +987,125 @@ use yii\bootstrap\ActiveForm;
     //Add a logger
     Logger.show();
     Logger.toggle();
+
+
+
+
+
+
+
+    function createStartCell() {
+        return new joint.shapes.basic.Rect({
+            markup: '<g class="rotatable"><rect class="body"/><text class="label"/></g>',
+            portMarkup: '<circle class="port-body"/>',
+            portLabelMarkup: '<text class="port-label"/>',
+            size: {
+                width: 90,
+                height: 30
+            },
+            ports: {
+                groups: {
+                    'out': {
+                        position: 'bottom',
+                        attrs: {
+                            '.port-label': {
+                                fill: '#000',
+                                text: 'out'
+                            },
+                            '.port-body': {
+                                fill: '#E74C3C',
+                                stroke: '#000',
+                                r: 10,
+                                magnet: true
+                            },
+                        },
+                        label: {
+                            position: {
+                                name: 'right',
+                                args: {y: +10} // extra arguments for the label layout function, see `layout.PortLabel` section
+                            }
+                        },
+                    }
+                },
+                items: [
+                    // initialize port in group 'in'
+                    {
+                        name: 'out',
+                        group: 'out',
+                        args: {} // overrides `args` from the group level definition.
+                    }
+                    // ... other ports
+                ]
+            },
+            attrs: {
+                '.label': { text: 'Start', fill: 'black',  'ref-y': 10},
+                rect: {
+                    fill: 'orange',
+                    width: 90,
+                    height: 30
+                }
+            }
+        });
+    }
+
+    function createFinishCell() {
+        return new joint.shapes.basic.Rect({
+            markup: '<g class="rotatable"><rect class="body"/><text class="label"/></g>',
+            portMarkup: '<circle class="port-body"/>',
+            portLabelMarkup: '<text class="port-label"/>',
+            size: {
+                width: 90,
+                height: 30
+            },
+            ports: {
+                groups: {
+                    'in': {
+                        position: 'top',
+                        attrs: {
+                            '.port-label': {
+                                fill: '#000',
+                                text: 'in'
+                            },
+                            '.port-body': {
+                                fill: '#16A085',
+                                stroke: '#000',
+                                r: 10,
+                                magnet: true
+                            }
+                        },
+                        label: {
+                            position: {
+                                name: 'right',
+                                args: {y: -10} // extra arguments for the label layout function, see `layout.PortLabel` section
+                            }
+                        },
+                    },
+                },
+                items: [
+                    // initialize port in group 'in'
+                    {
+                        name: 'in',
+                        group: 'in',
+                        args: {} // overrides `args` from the group level definition.
+                    }
+                    // ... other ports
+                ]
+            },
+            attrs: {
+                '.label': { text: 'Finish', fill: 'black',  'ref-y': 20 },
+                rect: {
+                    fill: 'orange',
+                    width: 90,
+                    height: 30
+                }
+            }
+        });
+    }
+
+
+
+
+
 
     /**########### Execution process ###########################*/
 

@@ -82,7 +82,6 @@ class AmdocsAppController extends \yii\web\Controller
         if(Yii::$app->request->isAjax){
             $data = Yii::$app->request->post();
 
-
             $command_script = $data['script'];
             $code = $data['code'];
 
@@ -104,6 +103,26 @@ class AmdocsAppController extends \yii\web\Controller
             }
         }
     }
+
+    public function actionSaveFlow()
+    {
+        if (Yii::$app->request->isAjax) {
+            $data = Yii::$app->request->post();
+
+            $graph = $data['graph'];
+            $bytes_num = file_put_contents('graph.txt',$graph);
+            return ($bytes_num > 0)? "Success" : "Error";
+        }
+    }
+
+    public function actionLoadFlow()
+    {
+        if (Yii::$app->request->isAjax) {
+            $graph = file_get_contents('graph.txt');
+            return ($graph == "FALSE")?  "Error" : $graph;
+        }
+    }
+
 
 
     public function actionAddCommand()
