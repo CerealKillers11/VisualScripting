@@ -8,6 +8,7 @@ use app\models\Users;
 use app\models\Workgroups;
 use Yii;
 use yii\filters\AccessControl;
+use yii\helpers\ArrayHelper;
 use yii\web\Controller;
 use yii\web\Response;
 use yii\filters\VerbFilter;
@@ -97,7 +98,7 @@ class AmdocsAppController extends \yii\web\Controller
             }
             else {
                 file_put_contents('command.sh',$command_script);
-                $output = shell_exec($command_script);
+                $output = shell_exec('./command.sh');
                 if($output == null) return '';
                 return $output;
             }
@@ -199,11 +200,28 @@ class AmdocsAppController extends \yii\web\Controller
                     'private' => "1" ])->
             orderBy('ID')->all();
 
+        //All commands are needed for dynamically creating JointJS html.ElementView classes
+        $all_commands = Commands::find()->all();
+
         return $this->render('index', ['model' => $model,
                                             'basic_commands' => $basic_commands,
                                             'group_commands' => $group_commands,
-                                            'user_commands' => $user_commands ]);
+                                            'user_commands' => $user_commands,
+                                            'all_commands' => $all_commands]);
     }
+
+    public function actionGetAllCommands(){
+        if (Yii::$app->request->isAjax) {
+            //All commands are needed for dynamically creating JointJS html.ElementView classes
+            $all_commands = Commands::find()->orderBy('ID')->all();
+
+            $res = ArrayHelper::toArray($all_commands);
+
+            return json_encode($res);
+        }
+    }
+
+
 
     public function actionLogin()
     {

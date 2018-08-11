@@ -16,6 +16,7 @@ use yii\bootstrap\ActiveForm;
     <script src="js/Logger.js"></script>
     <link rel="stylesheet" type="text/css" href="css/joint.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
     <style>
         * {
             box-sizing: border-box;
@@ -279,9 +280,7 @@ use yii\bootstrap\ActiveForm;
                 'name' => 'execute-button',
             ]) ?>
             <?php ActiveForm::end(); ?>
-
         </div>
-
 
         <text>Execution path:</text>
 
@@ -298,17 +297,6 @@ use yii\bootstrap\ActiveForm;
 
         <?= Html::button('Clear flow', ['id' => 'clear-flow-button',
             'class' => 'btn btn-primary']); ?>
-
-
-
-
-
-
-
-
-
-
-
 
     </div>
     <div class="row">
@@ -420,20 +408,6 @@ use yii\bootstrap\ActiveForm;
                 }
             }
 
-            // Do inherit from base html element to create our custom.
-            // -------------------------------------------------------------------------
-
-            joint.shapes.html = {};
-            joint.shapes.html.Element = joint.shapes.devs.Model.extend({
-                defaults: joint.util.deepSupplement({
-                    type: 'html.Element',
-                    attrs: {
-                        rect: { stroke: 'none', 'fill-opacity': 0 }
-                    }
-                }, joint.shapes.devs.Model.prototype.defaults),
-
-            });
-
             // Create a custom view for that element that displays an HTML div above it.
             // -------------------------------------------------------------------------
 
@@ -497,153 +471,33 @@ use yii\bootstrap\ActiveForm;
                     ).join('');
             }
 
-            joint.shapes.html.ElementView = joint.dia.ElementView.extend({
+            // Setting all command params be empty string by default
+            let default_params = splitted_params.reduce(function (acc,param,i) {
+                if(i===0) return acc; // Avoid empty string caused by first $ at param string from db
+                acc[param]="";
+                return acc;
+            },[]);
 
-                template: template_str,
+            // Do inherit from base html element to create our custom.
+            // joint.shapes.html = {};
+            joint.shapes.html.Element = joint.shapes.devs.Model.extend({
+                defaults: joint.util.deepSupplement({
+                    type: 'html.Element',
+                    attrs: {
+                        rect: { stroke: 'none', 'fill-opacity': 0 }
+                    },
+                    template: template_str,
+                    command_description: command_description,
+                    input_command_code: command_code,
+                    input_var_in: '',
+                    input_var_out: '',
+                    input_params: default_params,
+                    input_flags: [],
 
-                initialize: function() {
-                    _.bindAll(this, 'updateBox');
-                    joint.dia.ElementView.prototype.initialize.apply(this, arguments);
+                }, joint.shapes.devs.Model.prototype.defaults),
 
-                    this.$box = $(_.template(this.template)());
-                    // Prevent paper from handling pointerdown.
-                    this.$box.find('input,select').on('mousedown click', function(evt) {
-                        evt.stopPropagation();
-                    });
-                    // Reacting on the input change and storing the input data in the cell model.
-                    this.$box.find('input').on('change', _.bind(function(evt) {
-
-                        // We need to listen on user changes of html elements and save
-                        // the data inside a model, for future building the script.
-
-                        // Array of all inputs, include checkboxes.
-                        let user_inputs_array = $.makeArray(this.$box.find('input'));
-
-                        // First one is always input variable and last one is output variable.
-                        // But not in case we dealing with 'for' or 'if'
-                        if(command_name.localeCompare('for')==0){
-                            let input_params = user_inputs_array.reduce(function (acc,input,i) {
-                                if(input.type.localeCompare('text') == 0){
-                                    acc[input.defaultValue] = input.value;
-                                }
-                                return acc;
-                            }, [] );
-                            this.model.set('input_params',input_params);
-
-                        }
-                        else if(command_name.localeCompare('if')==0){
-                            let output_variable = user_inputs_array[user_inputs_array.length - 1].value;
-                            let input_params = user_inputs_array.reduce(function (acc,input,i) {
-                                if(i!==user_inputs_array.length-1 && input.type.localeCompare('text') == 0){
-                                    acc[input.defaultValue] = input.value;
-                                }
-                                return acc;
-                            }, [] );
-                            this.model.set('input_var_out',output_variable);
-                            this.model.set('input_params',input_params);
-
-                        }
-                        else {
-                            let input_variable = user_inputs_array[0].value;
-                            let output_variable = user_inputs_array[user_inputs_array.length - 1].value;
-
-                            let checked_checkboxes = user_inputs_array.reduce(function (acc,input) {
-                                if (input.type.localeCompare('checkbox') == 0 && input.checked) {
-                                    acc.push(input.name);
-                                }
-                                return acc;
-                            }, [] );
-                            let input_params = user_inputs_array.reduce(function (acc,input,i) {
-                                if(i!==0 && i!==user_inputs_array.length-1 && input.type.localeCompare('text') == 0){
-                                    acc[input.name] = input.value;
-                                }
-                                return acc;
-                            }, [] );
-
-                            this.model.set('input_var_in',input_variable);
-                            this.model.set('input_var_out',output_variable);
-                            this.model.set('input_flags',checked_checkboxes);
-                            this.model.set('input_params',input_params);
-                        }
-
-                        // Reacting on saving data to model with green border.
-                        this.$box.css({
-                            borderStyle: 'solid',
-                            borderColor: 'green'
-                        });
-                    }, this));
-
-                    // Command code is one of prerequisite to build and run
-                    this.model.set('input_command_code',command_code);
-
-                    // Setting the default parameter values
-                    this.model.set('input_var_in',"");
-                    this.model.set('input_var_out',"");
-
-                    // Setting all command params be empty string by default
-                    let default_params = splitted_params.reduce(function (acc,param,i) {
-                        if(i===0) return acc; // Avoid empty string caused by first $ at param string from db
-                        acc[param]="";
-                        return acc;
-                    },[]);
-                    this.model.set('input_params',default_params);
-
-                    // No one of flags is checked at start
-                    this.model.set('input_flags',[]);
-
-
-                    // Reacting on the keypress as unsaved data - red border.
-                    this.$box.find('input').on('keypress', _.bind(function(evt) {
-                        this.$box.css({
-                            borderStyle: 'solid',
-                            borderColor: 'red'
-                        });
-                    }, this));
-
-                    this.$box.find('select').on('change', _.bind(function(evt) {
-                        this.model.set('select', $(evt.target).val());
-                    }, this));
-                    this.$box.find('select').val(this.model.get('select'));
-                    this.$box.find('.delete').on('click', _.bind(this.model.remove, this.model));
-                    this.$box.find('.btn-info').on('click', _.bind(
-                        function(evt){
-                            alert(command_description);
-                        }
-                    ));
-
-                    // Update the box position whenever the underlying model changes.
-                    this.model.on('change', this.updateBox, this);
-                    // Remove the box when the model gets removed from the graph.
-                    this.model.on('remove', this.removeBox, this);
-
-                    this.updateBox();
-
-                },
-                render: function() {
-                    joint.dia.ElementView.prototype.render.apply(this, arguments);
-                    this.paper.$el.prepend(this.$box);
-                    this.updateBox();
-                    return this;
-                },
-
-                updateBox: function() {
-                    // Set the position and dimension of the box so that it covers the JointJS element.
-                    var bbox = this.model.getBBox();
-                    // Example of updating the HTML with a data stored in the cell model.
-                    this.$box.find('label').text(this.model.get('label'));
-                    this.$box.find('span').text(this.model.get('select'));
-                    this.$box.css({
-                        width: bbox.width,
-                        height: bbox.height,
-                        left: bbox.x,
-                        top: bbox.y,
-                        transform: 'rotate(' + (this.model.get('angle') || 0) + 'deg)'
-                    });
-                },
-                removeBox: function(evt) {
-                    this.$box.remove();
-                }
             });
+
 
             // Vary box sizes depending on command parameters.
             // -----------------------------------------------------------
@@ -852,6 +706,26 @@ use yii\bootstrap\ActiveForm;
             success: function(str_graph){
                 graph.clear();
                 graph.fromJSON(JSON.parse(str_graph));
+
+                let all_cells = graph.getCells();
+
+                for(let i=0;i <all_cells.length;i++) {
+                    if(all_cells[i].attributes.type.localeCompare("basic.Rect") === 0) {
+                        if(all_cells[i].attributes.ports.items[0].name.localeCompare("out") === 0) {
+                            /** This is definitely start cell! */
+                            start_cell = all_cells[i];
+                        } else if(all_cells[i].attributes.ports.items[0].name.localeCompare("in") === 0) {
+                            /** This is definitely finish cell! */
+                            finish_cell = all_cells[i];
+                        }
+                    }
+                }
+
+                current_cell = start_cell;
+
+                log();
+
+
             },
             error: function(){
                 alert("Unable to save flow!");
@@ -960,6 +834,196 @@ use yii\bootstrap\ActiveForm;
     finish_cell.position(350, 400);
     graph.addCell(finish_cell);
 
+
+    /** Define a namespace for our html elements. */
+    joint.shapes.html = {};
+
+    /** A dummy, empty implementation of html element. */
+    joint.shapes.html.Element = joint.shapes.devs.Model.extend({
+        defaults: joint.util.deepSupplement({
+            type: 'html.Element',
+            attrs: {
+                rect: { stroke: 'none', 'fill-opacity': 0 }
+            },
+            template: '',
+            command_description: '',
+            input_command_code: '',
+            input_var_in: '',
+            input_var_out: '',
+            input_params: {},
+            input_flags: [],
+
+        }, joint.shapes.devs.Model.prototype.defaults),
+
+    });
+
+    /** A real view of html element, model is not depend on it. */
+    joint.shapes.html.ElementView = joint.dia.ElementView.extend({
+
+        template: '', // Will be uploaded from a model.
+
+        initialize: function() {
+            _.bindAll(this, 'updateBox');
+            joint.dia.ElementView.prototype.initialize.apply(this, arguments);
+
+
+            this.template = this.model.get('template');
+
+            this.$box = $(_.template(this.template)());
+
+            // If the flow was uploaded from DB, need to upload elements!
+
+            // TO-DO!!!!
+
+            // Array of all inputs, include checkboxes.
+            let user_inputs_array = this.$box.find('input') || [];
+
+            for(let i=0; i<user_inputs_array.length; i++) {
+                if(user_inputs_array[i].name.localeCompare("input_variable") === 0) {
+                    user_inputs_array[i].value = this.model.get('input_var_in');
+                }
+                else if(user_inputs_array[i].name.localeCompare("output_variable") === 0) {
+                    user_inputs_array[i].value = this.model.get('input_var_out');
+                }
+
+                /** Other values which must be assigned from a model are flags and checkboxes*/
+                else if(user_inputs_array[i].type.localeCompare("checkbox") === 0) {
+                    if(this.model.get('input_flags').includes(user_inputs_array[i].name)) {
+                        user_inputs_array[i].checked = true;
+                    }
+                }
+                else if(user_inputs_array[i].type.localeCompare("text") === 0) {
+                    if(Object.keys(this.model.get('input_params')).includes(user_inputs_array[i].name)) {
+                        user_inputs_array[i].value = this.model.get('input_params')[user_inputs_array[i].name];
+                    }
+                }
+                else {
+                    alert("Error restoring values on view!");
+                }
+            }
+
+
+            // Prevent paper from handling pointerdown.
+            this.$box.find('input,select').on('mousedown click', function(evt) {
+                evt.stopPropagation();
+            });
+            // Reacting on the input change and storing the input data in the cell model.
+            this.$box.find('input').on('change', _.bind(function(evt) {
+
+                // We need to listen on user changes of html elements and save
+                // the data inside a model, for future building the script.
+
+                // Array of all inputs, include checkboxes.
+                let user_inputs_array = $.makeArray(this.$box.find('input'));
+
+                // First one is always input variable and last one is output variable.
+                // But not in case we dealing with 'for' or 'if'
+
+                if(this.model.get('input_command_code').localeCompare('for') === 0) {
+                    let input_params = user_inputs_array.reduce(function (acc,input,i) {
+                        if(input.type.localeCompare('text') === 0){
+                            acc[input.name] = input.value;
+                        }
+                        return acc;
+                    }, {} );
+                    this.model.set('input_params',input_params);
+
+                }
+                else if(this.model.get('input_command_code').localeCompare('if') === 0) {
+                    let output_variable = user_inputs_array[user_inputs_array.length - 1].value;
+                    let input_params = user_inputs_array.reduce(function (acc,input,i) {
+                        if(i!==user_inputs_array.length-1 && input.type.localeCompare('text') === 0){
+                            acc[input.name] = input.value;
+                        }
+                        return acc;
+                    }, {} );
+                    this.model.set('input_var_out',output_variable);
+                    this.model.set('input_params',input_params);
+
+                }
+                else {
+                    let input_variable = user_inputs_array[0].value;
+                    let output_variable = user_inputs_array[user_inputs_array.length - 1].value;
+
+                    let checked_checkboxes = user_inputs_array.reduce(function (acc,input) {
+                        if (input.type.localeCompare('checkbox') === 0 && input.checked) {
+                            acc.push(input.name);
+                        }
+                        return acc;
+                    }, [] );
+                    let input_params = user_inputs_array.reduce(function (acc,input,i) {
+                        if(i!==0 && i!==user_inputs_array.length-1 && input.type.localeCompare('text') === 0){
+                            acc[input.name] = input.value;
+                        }
+                        return acc;
+                    }, {} );
+
+                    this.model.set('input_var_in',input_variable);
+                    this.model.set('input_var_out',output_variable);
+                    this.model.set('input_flags',checked_checkboxes);
+                    this.model.set('input_params',input_params);
+                }
+
+                // Reacting on saving data to model with green border.
+                this.$box.css({
+                    borderStyle: 'solid',
+                    borderColor: 'green'
+                });
+            }, this));
+
+            // Reacting on the keypress as unsaved data - red border.
+            this.$box.find('input').on('keypress', _.bind(function(evt) {
+                this.$box.css({
+                    borderStyle: 'solid',
+                    borderColor: 'red'
+                });
+            }, this));
+
+            this.$box.find('select').on('change', _.bind(function(evt) {
+                this.model.set('select', $(evt.target).val());
+            }, this));
+            this.$box.find('select').val(this.model.get('select'));
+            this.$box.find('.delete').on('click', _.bind(this.model.remove, this.model));
+            this.$box.find('.btn-info').on('click', _.bind(
+                function(){
+                    alert(this.model.get('command_description'));
+                }, this
+            ));
+
+            // Update the box position whenever the underlying model changes.
+            this.model.on('change', this.updateBox, this);
+            // Remove the box when the model gets removed from the graph.
+            this.model.on('remove', this.removeBox, this);
+
+            this.updateBox();
+
+        },
+        render: function() {
+            joint.dia.ElementView.prototype.render.apply(this, arguments);
+            this.paper.$el.prepend(this.$box);
+            this.updateBox();
+            return this;
+        },
+
+        updateBox: function() {
+            // Set the position and dimension of the box so that it covers the JointJS element.
+            var bbox = this.model.getBBox();
+            // Example of updating the HTML with a data stored in the cell model.
+            this.$box.find('label').text(this.model.get('label'));
+            this.$box.find('span').text(this.model.get('select'));
+            this.$box.css({
+                width: bbox.width,
+                height: bbox.height,
+                left: bbox.x,
+                top: bbox.y,
+                transform: 'rotate(' + (this.model.get('angle') || 0) + 'deg)'
+            });
+        },
+        removeBox: function(evt) {
+            this.$box.remove();
+        }
+    });
+
     var paper_scale = 1;
 
     // $(document).ready(function () {
@@ -987,11 +1051,6 @@ use yii\bootstrap\ActiveForm;
     //Add a logger
     Logger.show();
     Logger.toggle();
-
-
-
-
-
 
 
     function createStartCell() {
@@ -1228,6 +1287,10 @@ use yii\bootstrap\ActiveForm;
 
     function buildOtherCommandScript(input) {
 
+        /** Other commands are executed on shell.
+         * The problem was that the input can contain quotations.
+         * This can be solved representing input as array. */
+
         // Bash script preamble
         let script = "#!/bin/bash" + "\n" + "\n";
 
@@ -1255,16 +1318,22 @@ use yii\bootstrap\ActiveForm;
 
          #!/bin/bash
 
-         x="Value of input variable"
+         arr = ("Value of input variable")
 
-         echo "$x" | current_command_string
+         echo "${arr[@]}" | current_command_string
 
          And its output will be assigned to output variable.
 
          */
 
-        script += "x=\""+ input + "\" \n";
-        script += "echo \"$x\" | " + current_command_string;
+        if(input.localeCompare("") === 0) {
+            /** No need for pipelined input.*/
+            script += current_command_string;
+        }
+        else {
+            script += "arr=(" + input + ")\n";
+            script += "echo \"${arr[@]}\" | " + current_command_string;
+        }
 
         return script;
     }
