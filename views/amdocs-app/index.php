@@ -14,7 +14,7 @@ use yii\bootstrap\ActiveForm;
     <script src="js/backbone.js"></script>
     <script src="js/joint.js"></script>
     <script src="js/Logger.js"></script>
-    <link rel="stylesheet" type="text/css" href="css/joint.css" />
+    <link rel="stylesheet" type="text/css" href="css/joint.css"/>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 
     <style>
@@ -90,11 +90,16 @@ use yii\bootstrap\ActiveForm;
             overflow-y: scroll;
 
         }
+        
+        .column {
+            float: left;
+            width: 10%;
+        }
 
         /* Clear floats after the columns */
         .row:after {
             content: "";
-            display: inline;
+            display: table;
             clear: both;
         }
 
@@ -138,7 +143,6 @@ use yii\bootstrap\ActiveForm;
             float: right;
             margin-left: 5px;
         }
-
 
         .accordion:hover {
             background-color: #ccc;
@@ -185,12 +189,14 @@ use yii\bootstrap\ActiveForm;
             box-sizing: border-box;
             z-index: 2;
         }
+
         .html-element select,
         .html-element input,
         .html-element button {
             /* Enable interacting with inputs only. */
             pointer-events: auto;
         }
+
         .html-element button.delete {
             color: white;
             border: none;
@@ -208,6 +214,7 @@ use yii\bootstrap\ActiveForm;
             font-weight: bold;
             cursor: pointer;
         }
+
         .html-element button.btn-info {
             color: white;
             border: none;
@@ -237,11 +244,13 @@ use yii\bootstrap\ActiveForm;
             height: 20px;
             line-height: 20px;
         }
+
         .html-element select {
             position: absolute;
             right: 2px;
             bottom: 28px;
         }
+
         .html-element input {
             /*position: relative;*/
             /*bottom: 0;*/
@@ -252,11 +261,13 @@ use yii\bootstrap\ActiveForm;
             /*padding: 5px;*/
             /*height: 16px;*/
         }
+
         .html-element label {
             color: #333;
             text-shadow: 1px 0 0 lightgray;
             font-weight: bold;
         }
+
         .html-element span {
             position: absolute;
             top: 2px;
@@ -269,9 +280,49 @@ use yii\bootstrap\ActiveForm;
 
     <div class="row">
 
-        <div class="col-sm-1">
-            <?php $form = ActiveForm::begin(['id' => 'input-flow-form',
-                'fieldConfig' => ['enableLabel'=>false], // Do not show the labels in view
+        <div class="column">
+
+            <?php $load_flow_form = ActiveForm::begin(['id' => 'load-flow-form',
+                'fieldConfig' => ['enableLabel' => false], // Do not show the labels in view
+                'action' => 'index.php?r=amdocs-app%2Fload-flow', //TO-DO pretty urls
+                'method' => 'post',
+            ]); ?>
+            <?= Html::submitButton('Load flow', ['name' => 'load-flow-button',
+                'class' => 'btn btn-primary']); ?>
+
+            <?php ActiveForm::end(); ?>
+
+        </div>
+
+        <div class="column">
+            <?php $save_flow_form = ActiveForm::begin(['id' => 'save-flow-form',
+                'fieldConfig' => ['enableLabel' => false], // Do not show the labels in view
+                'action' => 'index.php?r=amdocs-app%2Fsave-flow', //TO-DO pretty urls
+                'method' => 'post',
+            ]); ?>
+
+            <?= Html::submitButton('Save flow', ['name' => 'save-flow-button',
+                'class' => 'btn btn-primary']); ?>
+
+            <?= $save_flow_form->field($save_flow_model, 'json_graph')->
+            hiddenInput(['value' => ''])->
+            label(false) ?>
+
+            <?php ActiveForm::end(); ?>
+
+        </div>
+
+        <div class="column">
+
+            <?= Html::button('Clear flow', ['id' => 'clear-flow-button',
+                'class' => 'btn btn-primary']); ?>
+
+        </div>
+
+        <div class="column">
+
+            <?php $execute_form = ActiveForm::begin(['id' => 'execute-form',
+                'fieldConfig' => ['enableLabel' => false], // Do not show the labels in view
                 'action' => 'index.php?r=amdocs-app%2Fexecute', //TO-DO pretty urls
                 'method' => 'post',
             ]); ?>
@@ -280,43 +331,19 @@ use yii\bootstrap\ActiveForm;
                 'name' => 'execute-button',
             ]) ?>
             <?php ActiveForm::end(); ?>
+
         </div>
 
-        <text>Execution path:</text>
-
-        <input id="execution_path" type="text" value="<?php echo getcwd(); ?>" size="30">
-
-        <?= Html::button('Save as command', ['id' => 'save-command-button',
-            'class' => 'btn btn-primary']); ?>
-
-        <?= Html::button('Save as flow', ['id' => 'save-flow-button',
-            'class' => 'btn btn-primary']); ?>
-
-
-        <div class="col-sm-1">
-            <?php $form = ActiveForm::begin(['id' => 'load-flow-form',
-                'fieldConfig' => ['enableLabel'=>false], // Do not show the labels in view
-                'action' => 'index.php?r=amdocs-app%2Fload-flow', //TO-DO pretty urls
-                'method' => 'post',
-            ]); ?>
-
-            <?= Html::submitButton('Load flow', ['name' => 'load-flow-button',
-                'class' => 'btn btn-primary']); ?>
-
-            <?php ActiveForm::end(); ?>
+        <div class="column">
+            <text>Execution path:</text>
+            <input id="execution_path" type="text" value="<?php echo getcwd(); ?>" size="30">
         </div>
-
-
-
-
-
-        <?= Html::button('Clear flow', ['id' => 'clear-flow-button',
-            'class' => 'btn btn-primary']); ?>
 
     </div>
+
     <div class="row">
         <div class="leftcolumn">
-            <div class="library_menu" style="height: 600px;" >
+            <div class="library_menu" style="height: 600px;">
                 <button class="accordion">Basic Commands</button>
                 <div class="panel">
                     <?php foreach ($basic_commands as $command): ?>
@@ -330,7 +357,7 @@ use yii\bootstrap\ActiveForm;
                              command_code="<?= Html::encode("{$command->code}"); ?>"
                              command_description="<?= Html::encode("{$command->description}"); ?>"
                         >
-                            <?=Html::encode("{$command->name}"); ?>
+                            <?= Html::encode("{$command->name}"); ?>
                         </div>
                     <?php endforeach; ?>
                 </div>
@@ -347,7 +374,7 @@ use yii\bootstrap\ActiveForm;
                              command_code="<?= Html::encode("{$command->code}"); ?>"
                              command_description="<?= Html::encode("{$command->description}"); ?>"
                         >
-                            <?=Html::encode("{$command->name}"); ?>
+                            <?= Html::encode("{$command->name}"); ?>
                         </div>
                     <?php endforeach; ?>
                 </div>
@@ -364,7 +391,7 @@ use yii\bootstrap\ActiveForm;
                              command_code="<?= Html::encode("{$command->code}"); ?>"
                              command_description="<?= Html::encode("{$command->description}"); ?>"
                         >
-                            <?=Html::encode("{$command->name}"); ?>
+                            <?= Html::encode("{$command->name}"); ?>
                         </div>
                     <?php endforeach; ?>
                 </div>
@@ -372,9 +399,9 @@ use yii\bootstrap\ActiveForm;
         </div>
 
         <div class="rightcolumn" id="rightcolumn" style="height: 600px;">
-                <div class="paper_holder" id="paper_holder"
-                     ondragover="allowDrop(event);"
-                     ondrop="addElementToGraph(event);"></div>
+            <div class="paper_holder" id="paper_holder"
+                 ondragover="allowDrop(event);"
+                 ondrop="addElementToGraph(event);"></div>
         </div>
     </div>
 
@@ -397,26 +424,26 @@ use yii\bootstrap\ActiveForm;
             // -------------------------------------------------------------------------
 
             let flags_str_arr = [];
-            if(!(command_flags.localeCompare('') == 0)){
+            if (!(command_flags.localeCompare('') == 0)) {
 
                 // Parse parameters. Divided with '$'.
                 let arr = command_flags.split("$");
                 let i;
-                for(i=1; i<arr.length; i++) {
+                for (i = 1; i < arr.length; i++) {
                     flags_str_arr.push(
-                    '<input type="checkbox" name=\"' + arr[i] + '\" value=\"' + arr[i] + '\" >'+ arr[i] + '</input>');
+                        '<input type="checkbox" name=\"' + arr[i] + '\" value=\"' + arr[i] + '\" >' + arr[i] + '</input>');
                     flags_str_arr.push('<br/>');
                 }
             }
 
             let parameters_str_arr = [];
             let splitted_params = [];
-            if(!(command_parameters.localeCompare('') == 0)){
+            if (!(command_parameters.localeCompare('') == 0)) {
 
                 // Parse parameters. Divided with '$'.
                 splitted_params = command_parameters.split("$");
                 let i;
-                for(i=1; i<splitted_params.length; i++) {
+                for (i = 1; i < splitted_params.length; i++) {
                     parameters_str_arr.push(
                         splitted_params[i] + ":" + '<input type="text" name=\"' + splitted_params[i] + '\" value=\"\" ></input>');
                     parameters_str_arr.push('<br/>');
@@ -432,36 +459,36 @@ use yii\bootstrap\ActiveForm;
 
             let template_str = '';
 
-            if(command_name.localeCompare('for') == 0) { // For loop have no input and output variables
+            if (command_name.localeCompare('for') == 0) { // For loop have no input and output variables
                 template_str =
-                ([  '<div class="html-element">',
-                    '<button class="delete">x</button>',
-                    '<button class="btn-info">i</button>',
-                    '<label></label>',
-                    '<span></span>',
-                    '<br/>'].concat(
-                        flags_str_arr.concat(
-                            parameters_str_arr
-                        )
-                    )
-                ).join('');
-            }
-            else if(command_name.localeCompare('if') == 0) { // Input is condition, output is true/false
-                template_str =
-                ([  '<div class="html-element">',
-                    '<button class="delete">x</button>',
-                    '<button class="btn-info">i</button>',
-                    '<label></label>',
-                    '<span></span>',
-                    '<br/>'].concat(
-                        flags_str_arr.concat(
-                            parameters_str_arr.concat(
-                                ['------------------------------------', 'output:',
-                                    '<input name="output_variable" type="text" value="">']
+                    (['<div class="html-element">',
+                            '<button class="delete">x</button>',
+                            '<button class="btn-info">i</button>',
+                            '<label></label>',
+                            '<span></span>',
+                            '<br/>'].concat(
+                            flags_str_arr.concat(
+                                parameters_str_arr
                             )
                         )
-                    )
-                ).join('');
+                    ).join('');
+            }
+            else if (command_name.localeCompare('if') == 0) { // Input is condition, output is true/false
+                template_str =
+                    (['<div class="html-element">',
+                            '<button class="delete">x</button>',
+                            '<button class="btn-info">i</button>',
+                            '<label></label>',
+                            '<span></span>',
+                            '<br/>'].concat(
+                            flags_str_arr.concat(
+                                parameters_str_arr.concat(
+                                    ['------------------------------------', 'output:',
+                                        '<input name="output_variable" type="text" value="">']
+                                )
+                            )
+                        )
+                    ).join('');
             }
             else { // Other command with possible input and output
                 template_str =
@@ -487,11 +514,11 @@ use yii\bootstrap\ActiveForm;
             }
 
             // Setting all command params be empty string by default
-            let default_params = splitted_params.reduce(function (acc,param,i) {
-                if(i===0) return acc; // Avoid empty string caused by first $ at param string from db
-                acc[param]="";
+            let default_params = splitted_params.reduce(function (acc, param, i) {
+                if (i === 0) return acc; // Avoid empty string caused by first $ at param string from db
+                acc[param] = "";
                 return acc;
-            },[]);
+            }, []);
 
             // Do inherit from base html element to create our custom.
             // joint.shapes.html = {};
@@ -499,7 +526,7 @@ use yii\bootstrap\ActiveForm;
                 defaults: joint.util.deepSupplement({
                     type: 'html.Element',
                     attrs: {
-                        rect: { stroke: 'none', 'fill-opacity': 0 }
+                        rect: {stroke: 'none', 'fill-opacity': 0}
                     },
                     template: template_str,
                     command_description: command_description,
@@ -517,20 +544,20 @@ use yii\bootstrap\ActiveForm;
             // Vary box sizes depending on command parameters.
             // -----------------------------------------------------------
 
-            let additionalHeight = (flags_str_arr.length-1)*15 + (parameters_str_arr.length-1)*15 + 160;
+            let additionalHeight = (flags_str_arr.length - 1) * 15 + (parameters_str_arr.length - 1) * 15 + 160;
 
             // Create JointJS elements and add them to the graph as usual.
             // -----------------------------------------------------------
 
-            if(command_name.localeCompare('if') == 0){
+            if (command_name.localeCompare('if') == 0) {
                 let if_element = new joint.shapes.html.Element({
-                    position: { x:20, y: 20 },
+                    position: {x: 20, y: 20},
                     size: {
                         width: 190,
                         height: 20 + additionalHeight
                     },
                     inPorts: ['in'],
-                    outPorts: ['out(true)','out(false)'],
+                    outPorts: ['out(true)', 'out(false)'],
                     ports: {
                         groups: {
                             'in': {
@@ -543,7 +570,7 @@ use yii\bootstrap\ActiveForm;
                                 label: {
                                     position: {
                                         name: 'right',
-                                        args: { y: -10 } // extra arguments for the label layout function, see `layout.PortLabel` section
+                                        args: {y: -10} // extra arguments for the label layout function, see `layout.PortLabel` section
                                     }
                                 }
                             },
@@ -562,15 +589,15 @@ use yii\bootstrap\ActiveForm;
 
                 if_element.addTo(graph);
             }
-            else if(command_name.localeCompare('for') == 0){
+            else if (command_name.localeCompare('for') == 0) {
                 let for_element = new joint.shapes.html.Element({
-                    position: { x:20, y: 20 },
+                    position: {x: 20, y: 20},
                     size: {
                         width: 190,
                         height: 90
                     },
                     inPorts: ['in'],
-                    outPorts: ['loop','continue'],
+                    outPorts: ['loop', 'continue'],
                     ports: {
                         groups: {
                             'in': {
@@ -583,7 +610,7 @@ use yii\bootstrap\ActiveForm;
                                 label: {
                                     position: {
                                         name: 'right',
-                                        args: { y: -10 } // extra arguments for the label layout function, see `layout.PortLabel` section
+                                        args: {y: -10} // extra arguments for the label layout function, see `layout.PortLabel` section
                                     }
                                 }
                             },
@@ -602,9 +629,9 @@ use yii\bootstrap\ActiveForm;
 
                 for_element.addTo(graph);
             }
-            else{
+            else {
                 let command_element = new joint.shapes.html.Element({
-                    position: { x:20, y: 20 },
+                    position: {x: 20, y: 20},
                     size: {
                         width: 190,
                         height: 70 + additionalHeight
@@ -623,7 +650,7 @@ use yii\bootstrap\ActiveForm;
                                 label: {
                                     position: {
                                         name: 'right',
-                                        args: { y: -10 } // extra arguments for the label layout function, see `layout.PortLabel` section
+                                        args: {y: -10} // extra arguments for the label layout function, see `layout.PortLabel` section
                                     }
                                 }
                             },
@@ -680,37 +707,44 @@ use yii\bootstrap\ActiveForm;
         });
     }
 
-    document.addEventListener("dragstart", function(event) {
-        if ( event.target.className === "library_element" ) {
+    document.addEventListener("dragstart", function (event) {
+        if (event.target.className === "library_element") {
             let paper_holder = document.getElementById('rightcolumn');
             paper_holder.style.border = "3px dotted red";
         }
     });
 
-    document.addEventListener("dragend", function(event) {
-        if ( event.target.className === "library_element" ) {
+    document.addEventListener("dragend", function (event) {
+        if (event.target.className === "library_element") {
             let paper_holder = document.getElementById('rightcolumn');
             paper_holder.style.border = "";
         }
     });
 
-    $("#save-flow-button").click( function() {
-        let str_graph = JSON.stringify(graph.toJSON());
+    $("#save-flow-button").click(function () {
 
-        $.ajax({
-            url: 'index.php?r=amdocs-app%2Fsave-flow',
-            type: 'POST',
-            data: 'graph='+ str_graph, //POST-style
-            success: function(res){
-                alert("Server respond: " + res);
-            },
-            error: function(){
-                alert("Unable to save flow!");
-            }
+        // $.ajax({
+        //     url: 'index.php?r=amdocs-app%2Fsave-flow',
+        //     type: 'POST',
+        //     data: 'graph='+ str_graph, //POST-style
+        //     success: function(res){
+        //         alert("Server respond: " + res);
+        //     },
+        //     error: function(){
+        //         alert("Unable to save flow!");
+        //     }
+        // });
+    });
+
+    $(document).ready(function () {
+        $("#save-flow-form").on('beforeSubmit', function () {
+            let str_graph = JSON.stringify(graph.toJSON());
+            document.getElementById('flowform-json_graph').value = str_graph;
         });
     });
 
-    $("#clear-flow-button").click( function() {
+
+    $("#clear-flow-button").click(function () {
         graph.clear();
 
         start_cell = createStartCell();
@@ -722,18 +756,20 @@ use yii\bootstrap\ActiveForm;
         graph.addCell(finish_cell);
 
         current_cell = start_cell;
+
+        log("Flow was cleared.")
     });
 
-    $(document).ready( function () {
-        $("#input-flow-form").on('beforeSubmit', function() {
+    $(document).ready(function () {
+        $("#execute-form").on('beforeSubmit', function () {
 
             // Collecting user variables - better to define them at start of a script
             // and change them on-demand during the flow.
             // At start, all of them are empty strings.
-            if(current_cell === start_cell) {
+            if (current_cell === start_cell) {
                 collectUserVariables();
                 let start_cell_successors = graph.getNeighbors(start_cell);
-                if(start_cell_successors.length === 0) {
+                if (start_cell_successors.length === 0) {
                     log("Error: Start must be connected. Aborting execution.");
                     return false;
                 }
@@ -758,10 +794,10 @@ use yii\bootstrap\ActiveForm;
             let input = "";
             let splitted_input = current_cell.attributes.input_var_in.split("$");
 
-            if(splitted_input.length > 1 && splitted_input[0].localeCompare("")===0) {
+            if (splitted_input.length > 1 && splitted_input[0].localeCompare("") === 0) {
 
                 /** This is variable because starts from $ */
-                input =  user_variables[ splitted_input[1] ];
+                input = user_variables[splitted_input[1]];
             }
             else {
 
@@ -774,10 +810,10 @@ use yii\bootstrap\ActiveForm;
             let script = "";
 
             let code = current_cell.attributes.input_command_code;
-            if(code.localeCompare("if") === 0) {
+            if (code.localeCompare("if") === 0) {
                 script = buildIfCommandScript();
             }
-            else if(code.localeCompare("for") === 0) {
+            else if (code.localeCompare("for") === 0) {
 
             }
             else {
@@ -789,18 +825,18 @@ use yii\bootstrap\ActiveForm;
             $.ajax({
                 url: 'index.php?r=amdocs-app%2Fexecute',
                 type: 'POST',
-                data: 'script='+ script + '&'+'code='+code, //POST-style
-                success: function(res){
+                data: 'script=' + script + '&' + 'code=' + code, //POST-style
+                success: function (res) {
 
                     /** Cut the possible \n at end of result */
-                    if(res.charAt(res.length-1) === '\n') {
-                        res = res.slice(0,res.length-1);
+                    if (res.charAt(res.length - 1) === '\n') {
+                        res = res.slice(0, res.length - 1);
                     }
 
 
                     let code = current_cell.attributes.input_command_code;
 
-                    let log_output = (res.localeCompare("")===0)?
+                    let log_output = (res.localeCompare("") === 0) ?
 
                         "Executed command: " + code + ", no output"
                         :
@@ -815,7 +851,7 @@ use yii\bootstrap\ActiveForm;
                     moveToNextCommand(res);
 
                 },
-                error: function(){
+                error: function () {
                     alert('Error!');
                 }
             });
@@ -848,7 +884,7 @@ use yii\bootstrap\ActiveForm;
                 '<path class="marker-arrowhead" end="<%= end %>" d="M 0 0 0 0" />',
                 '</g>'
             ].join(''),
-            router: { name: 'manhattan' },
+            router: {name: 'manhattan'},
 
         }, joint.dia.Link.prototype.defaults),
     });
@@ -862,9 +898,9 @@ use yii\bootstrap\ActiveForm;
         model: graph,
         gridSize: 10,
         drawGrid: true,
-        snapLinks: { radius: 50 },
+        snapLinks: {radius: 50},
 
-        validateConnection: function(cellViewS, magnetS, cellViewT, magnetT, end, linkView) {
+        validateConnection: function (cellViewS, magnetS, cellViewT, magnetT, end, linkView) {
             // Prevent linking from input ports.
             if (magnetS && magnetS.getAttribute('port-group') === 'in') return false;
             // Prevent linking from output ports to input ports within one element.
@@ -878,14 +914,14 @@ use yii\bootstrap\ActiveForm;
             return magnetT && magnetT.getAttribute('port-group') === 'in';
         },
 
-        validateMagnet: function(cellView, magnet) {
+        validateMagnet: function (cellView, magnet) {
             // Prevent links from ports that already have a link
             var port = magnet.getAttribute('port');
-            var links = graph.getConnectedLinks(cellView.model, { outbound: true });
-            var portLinks = _.filter(links, function(o) {
+            var links = graph.getConnectedLinks(cellView.model, {outbound: true});
+            var portLinks = _.filter(links, function (o) {
                 return o.get('source').port == port;
             });
-            if(portLinks.length > 0) return false;
+            if (portLinks.length > 0) return false;
             // Note that this is the default behaviour. Just showing it here for reference.
             // Disable linking interaction for magnets marked as passive (see below `.inPorts circle`).
             return magnet.getAttribute('magnet') !== 'passive';
@@ -914,7 +950,7 @@ use yii\bootstrap\ActiveForm;
         defaults: joint.util.deepSupplement({
             type: 'html.Element',
             attrs: {
-                rect: { stroke: 'none', 'fill-opacity': 0 }
+                rect: {stroke: 'none', 'fill-opacity': 0}
             },
             template: '',
             command_description: '',
@@ -933,7 +969,7 @@ use yii\bootstrap\ActiveForm;
 
         template: '', // Will be uploaded from a model.
 
-        initialize: function() {
+        initialize: function () {
             _.bindAll(this, 'updateBox');
             joint.dia.ElementView.prototype.initialize.apply(this, arguments);
 
@@ -949,22 +985,22 @@ use yii\bootstrap\ActiveForm;
             // Array of all inputs, include checkboxes.
             let user_inputs_array = this.$box.find('input') || [];
 
-            for(let i=0; i<user_inputs_array.length; i++) {
-                if(user_inputs_array[i].name.localeCompare("input_variable") === 0) {
+            for (let i = 0; i < user_inputs_array.length; i++) {
+                if (user_inputs_array[i].name.localeCompare("input_variable") === 0) {
                     user_inputs_array[i].value = this.model.get('input_var_in');
                 }
-                else if(user_inputs_array[i].name.localeCompare("output_variable") === 0) {
+                else if (user_inputs_array[i].name.localeCompare("output_variable") === 0) {
                     user_inputs_array[i].value = this.model.get('input_var_out');
                 }
 
                 /** Other values which must be assigned from a model are flags and checkboxes*/
-                else if(user_inputs_array[i].type.localeCompare("checkbox") === 0) {
-                    if(this.model.get('input_flags').includes(user_inputs_array[i].name)) {
+                else if (user_inputs_array[i].type.localeCompare("checkbox") === 0) {
+                    if (this.model.get('input_flags').includes(user_inputs_array[i].name)) {
                         user_inputs_array[i].checked = true;
                     }
                 }
-                else if(user_inputs_array[i].type.localeCompare("text") === 0) {
-                    if(Object.keys(this.model.get('input_params')).includes(user_inputs_array[i].name)) {
+                else if (user_inputs_array[i].type.localeCompare("text") === 0) {
+                    if (Object.keys(this.model.get('input_params')).includes(user_inputs_array[i].name)) {
                         user_inputs_array[i].value = this.model.get('input_params')[user_inputs_array[i].name];
                     }
                 }
@@ -975,11 +1011,11 @@ use yii\bootstrap\ActiveForm;
 
 
             // Prevent paper from handling pointerdown.
-            this.$box.find('input,select').on('mousedown click', function(evt) {
+            this.$box.find('input,select').on('mousedown click', function (evt) {
                 evt.stopPropagation();
             });
             // Reacting on the input change and storing the input data in the cell model.
-            this.$box.find('input').on('change', _.bind(function(evt) {
+            this.$box.find('input').on('change', _.bind(function (evt) {
 
                 // We need to listen on user changes of html elements and save
                 // the data inside a model, for future building the script.
@@ -990,49 +1026,49 @@ use yii\bootstrap\ActiveForm;
                 // First one is always input variable and last one is output variable.
                 // But not in case we dealing with 'for' or 'if'
 
-                if(this.model.get('input_command_code').localeCompare('for') === 0) {
-                    let input_params = user_inputs_array.reduce(function (acc,input,i) {
-                        if(input.type.localeCompare('text') === 0){
+                if (this.model.get('input_command_code').localeCompare('for') === 0) {
+                    let input_params = user_inputs_array.reduce(function (acc, input, i) {
+                        if (input.type.localeCompare('text') === 0) {
                             acc[input.name] = input.value;
                         }
                         return acc;
-                    }, {} );
-                    this.model.set('input_params',input_params);
+                    }, {});
+                    this.model.set('input_params', input_params);
 
                 }
-                else if(this.model.get('input_command_code').localeCompare('if') === 0) {
+                else if (this.model.get('input_command_code').localeCompare('if') === 0) {
                     let output_variable = user_inputs_array[user_inputs_array.length - 1].value;
-                    let input_params = user_inputs_array.reduce(function (acc,input,i) {
-                        if(i!==user_inputs_array.length-1 && input.type.localeCompare('text') === 0){
+                    let input_params = user_inputs_array.reduce(function (acc, input, i) {
+                        if (i !== user_inputs_array.length - 1 && input.type.localeCompare('text') === 0) {
                             acc[input.name] = input.value;
                         }
                         return acc;
-                    }, {} );
-                    this.model.set('input_var_out',output_variable);
-                    this.model.set('input_params',input_params);
+                    }, {});
+                    this.model.set('input_var_out', output_variable);
+                    this.model.set('input_params', input_params);
 
                 }
                 else {
                     let input_variable = user_inputs_array[0].value;
                     let output_variable = user_inputs_array[user_inputs_array.length - 1].value;
 
-                    let checked_checkboxes = user_inputs_array.reduce(function (acc,input) {
+                    let checked_checkboxes = user_inputs_array.reduce(function (acc, input) {
                         if (input.type.localeCompare('checkbox') === 0 && input.checked) {
                             acc.push(input.name);
                         }
                         return acc;
-                    }, [] );
-                    let input_params = user_inputs_array.reduce(function (acc,input,i) {
-                        if(i!==0 && i!==user_inputs_array.length-1 && input.type.localeCompare('text') === 0){
+                    }, []);
+                    let input_params = user_inputs_array.reduce(function (acc, input, i) {
+                        if (i !== 0 && i !== user_inputs_array.length - 1 && input.type.localeCompare('text') === 0) {
                             acc[input.name] = input.value;
                         }
                         return acc;
-                    }, {} );
+                    }, {});
 
-                    this.model.set('input_var_in',input_variable);
-                    this.model.set('input_var_out',output_variable);
-                    this.model.set('input_flags',checked_checkboxes);
-                    this.model.set('input_params',input_params);
+                    this.model.set('input_var_in', input_variable);
+                    this.model.set('input_var_out', output_variable);
+                    this.model.set('input_flags', checked_checkboxes);
+                    this.model.set('input_params', input_params);
                 }
 
                 // Reacting on saving data to model with green border.
@@ -1043,20 +1079,20 @@ use yii\bootstrap\ActiveForm;
             }, this));
 
             // Reacting on the keypress as unsaved data - red border.
-            this.$box.find('input').on('keypress', _.bind(function(evt) {
+            this.$box.find('input').on('keypress', _.bind(function (evt) {
                 this.$box.css({
                     borderStyle: 'solid',
                     borderColor: 'red'
                 });
             }, this));
 
-            this.$box.find('select').on('change', _.bind(function(evt) {
+            this.$box.find('select').on('change', _.bind(function (evt) {
                 this.model.set('select', $(evt.target).val());
             }, this));
             this.$box.find('select').val(this.model.get('select'));
             this.$box.find('.delete').on('click', _.bind(this.model.remove, this.model));
             this.$box.find('.btn-info').on('click', _.bind(
-                function(){
+                function () {
                     alert(this.model.get('command_description'));
                 }, this
             ));
@@ -1069,14 +1105,14 @@ use yii\bootstrap\ActiveForm;
             this.updateBox();
 
         },
-        render: function() {
+        render: function () {
             joint.dia.ElementView.prototype.render.apply(this, arguments);
             this.paper.$el.prepend(this.$box);
             this.updateBox();
             return this;
         },
 
-        updateBox: function() {
+        updateBox: function () {
             // Set the position and dimension of the box so that it covers the JointJS element.
             var bbox = this.model.getBBox();
             // Example of updating the HTML with a data stored in the cell model.
@@ -1090,7 +1126,7 @@ use yii\bootstrap\ActiveForm;
                 transform: 'rotate(' + (this.model.get('angle') || 0) + 'deg)'
             });
         },
-        removeBox: function(evt) {
+        removeBox: function (evt) {
             this.$box.remove();
         }
     });
@@ -1131,22 +1167,20 @@ use yii\bootstrap\ActiveForm;
     /**########### Execution process ###########################*/
 
     /** Real execution of commands done on server.
-    * We need to save the flow graph during execution.
-    * So the per-command execution is done via ajax. */
+     * We need to save the flow graph during execution.
+     * So the per-command execution is done via ajax. */
 
     /** At start, we actually need to start a flow from start cell.
      * Initialized from loaded graph or created if no load. */
     var current_cell = start_cell;
 
     /** User variables are changed during the execution,
-    * we need to save them during the execution of commands.
-    * Pay attention - this is associative array. */
+     * we need to save them during the execution of commands.
+     * Pay attention - this is associative array. */
     var user_variables = [];
 
 
     /** Script execution helpers */
-
-
 
 
     /** Graph creation helpers */
@@ -1156,7 +1190,7 @@ use yii\bootstrap\ActiveForm;
         let loaded_graph = <?php echo json_encode($json_graph) ?>;
         let loaded_graph_name = <?php echo json_encode($json_graph_name) ?>;
 
-        if(loaded_graph.localeCompare("") === 0){
+        if (loaded_graph.localeCompare("") === 0) {
             /** There is no loaded graph.
              * Build new start and finish cells. */
             start_cell = createStartCell();
@@ -1177,12 +1211,12 @@ use yii\bootstrap\ActiveForm;
 
             let all_cells = graph.getCells();
 
-            for(let i=0;i <all_cells.length;i++) {
-                if(all_cells[i].attributes.type.localeCompare("basic.Rect") === 0) {
-                    if(all_cells[i].attributes.ports.items[0].name.localeCompare("out") === 0) {
+            for (let i = 0; i < all_cells.length; i++) {
+                if (all_cells[i].attributes.type.localeCompare("basic.Rect") === 0) {
+                    if (all_cells[i].attributes.ports.items[0].name.localeCompare("out") === 0) {
                         /** This is definitely start cell! */
                         start_cell = all_cells[i];
-                    } else if(all_cells[i].attributes.ports.items[0].name.localeCompare("in") === 0) {
+                    } else if (all_cells[i].attributes.ports.items[0].name.localeCompare("in") === 0) {
                         /** This is definitely finish cell! */
                         finish_cell = all_cells[i];
                     }
@@ -1235,7 +1269,7 @@ use yii\bootstrap\ActiveForm;
                 ]
             },
             attrs: {
-                '.label': { text: 'Start', fill: 'black',  'ref-y': 10},
+                '.label': {text: 'Start', fill: 'black', 'ref-y': 10},
                 rect: {
                     fill: 'orange',
                     width: 90,
@@ -1289,7 +1323,7 @@ use yii\bootstrap\ActiveForm;
                 ]
             },
             attrs: {
-                '.label': { text: 'Finish', fill: 'black',  'ref-y': 20 },
+                '.label': {text: 'Finish', fill: 'black', 'ref-y': 20},
                 rect: {
                     fill: 'orange',
                     width: 90,
@@ -1308,7 +1342,7 @@ use yii\bootstrap\ActiveForm;
          * The problem was that the input can contain quotations.
          * This can be solved representing input as array. */
 
-        // Bash script preamble
+            // Bash script preamble
         let script = "#!/bin/bash" + "\n" + "\n";
 
         // Prepare code of a command
@@ -1316,7 +1350,7 @@ use yii\bootstrap\ActiveForm;
 
         /** Other command, with classic structure. */
 
-        // Prepare flags
+            // Prepare flags
         let flags = composeFlags(current_cell);
 
         // Achieve params from associative array inside cell model
@@ -1324,11 +1358,11 @@ use yii\bootstrap\ActiveForm;
 
         // Compose the command string
         let current_command_string = code;
-        if(flags.localeCompare("")!=0){
-            current_command_string+= (" " + flags);
+        if (flags.localeCompare("") != 0) {
+            current_command_string += (" " + flags);
         }
-        if(params.localeCompare("")!=0){
-            current_command_string+= (" " + params);
+        if (params.localeCompare("") != 0) {
+            current_command_string += (" " + params);
         }
 
         /** Structure of such a command is like this:
@@ -1343,7 +1377,7 @@ use yii\bootstrap\ActiveForm;
 
          */
 
-        if(input.localeCompare("") === 0) {
+        if (input.localeCompare("") === 0) {
             /** No need for pipelined input.*/
             script += current_command_string;
         }
@@ -1362,7 +1396,7 @@ use yii\bootstrap\ActiveForm;
          * including logical operators.
          * Comparison is made for strings and variables.*/
 
-        // The only param of 'if' is a condition
+            // The only param of 'if' is a condition
         let condition = composeParams(current_cell);
 
         let regex = /([()=<>&| "])/;
@@ -1372,21 +1406,21 @@ use yii\bootstrap\ActiveForm;
 
         let vars_from_condition = [];
 
-        for(i=0;i<splitted_condition.length;i++) {
-            if(splitted_condition[i].startsWith("$") && !vars_from_condition.includes(splitted_condition[i],0)) {
+        for (i = 0; i < splitted_condition.length; i++) {
+            if (splitted_condition[i].startsWith("$") && !vars_from_condition.includes(splitted_condition[i], 0)) {
                 vars_from_condition.push(splitted_condition[i]);
             }
         }
 
         /** These variables are with '$' at start - need to cut */
-        for(i=0;i<vars_from_condition.length;i++) {
-            vars_from_condition[i] = vars_from_condition[i].replace("$","");
+        for (i = 0; i < vars_from_condition.length; i++) {
+            vars_from_condition[i] = vars_from_condition[i].replace("$", "");
         }
 
         /** If one of condition's variables is not defined yet,
          * add it automatically as empty string, but log a warning.*/
-        for(i=0;i<vars_from_condition.length;i++) {
-            if(!Object.keys(user_variables).includes(vars_from_condition[i])) {
+        for (i = 0; i < vars_from_condition.length; i++) {
+            if (!Object.keys(user_variables).includes(vars_from_condition[i])) {
                 user_variables[vars_from_condition[i]] = "";
                 log("Warning: variable $" + vars_from_condition[i] + " was not defined before.");
                 log("Warning: auto-assigning variable $" + vars_from_condition[i] + " to \"\".");
@@ -1395,9 +1429,9 @@ use yii\bootstrap\ActiveForm;
 
         /** Prepare a string with definition of variables */
         let string_to_eval = "";
-        for(i=0;i<vars_from_condition.length;i++) {
-            for(let v in user_variables) {
-                if(v.localeCompare(vars_from_condition[i]) === 0) {
+        for (i = 0; i < vars_from_condition.length; i++) {
+            for (let v in user_variables) {
+                if (v.localeCompare(vars_from_condition[i]) === 0) {
                     string_to_eval += "$" + v + " = " + "\"" + user_variables[v] + "\"" + ";\n"
                 }
             }
@@ -1408,7 +1442,7 @@ use yii\bootstrap\ActiveForm;
         /** Here the issue is that post-type request uses '&' char.
          * Replace the '&' with '#' in conditional to sent via post. */
 
-        string_to_eval = string_to_eval.replace("&&","##");
+        string_to_eval = string_to_eval.replace("&&", "##");
 
         return string_to_eval;
     }
@@ -1416,18 +1450,18 @@ use yii\bootstrap\ActiveForm;
     function assignVariableFromOutput(res) {
         let var_out = current_cell.attributes.input_var_out;
 
-        if(var_out.localeCompare("")!==0) {
+        if (var_out.localeCompare("") !== 0) {
             /** User defined variable to assign output to it */
             let splitted_output = var_out.split("$");
 
-            if(splitted_output.length > 1 && splitted_output[0].localeCompare("")===0) {
+            if (splitted_output.length > 1 && splitted_output[0].localeCompare("") === 0) {
 
                 /** This is variable because starts from $. Ok, assign and save. */
-                user_variables[ splitted_output[1] ] = res;
+                user_variables[splitted_output[1]] = res;
                 log("Variable assigned: " + var_out + " = \"" + res + "\"");
 
             }
-            else if (splitted_output[0].localeCompare("")===0) {
+            else if (splitted_output[0].localeCompare("") === 0) {
                 /** Do nothing, user don't need an assignment of variable. */
             }
             else {
@@ -1440,13 +1474,13 @@ use yii\bootstrap\ActiveForm;
     function moveToNextCommand(res) {
         /** Move to the next command.
          * In case of loop and if we need to make decisions based on ports.*/
-        let out_neighbors = graph.getNeighbors(current_cell, { outbound : true });
+        let out_neighbors = graph.getNeighbors(current_cell, {outbound: true});
 
         console.log("");
 
         let code = current_cell.attributes.input_command_code;
 
-        if(out_neighbors.length === 0) {
+        if (out_neighbors.length === 0) {
             // A case when flow does not connected to finish cell
             log("Warning: unexpected end of flow - not connected to finish cell!");
             log("Warning: Next execution will continue from start cell");
@@ -1459,9 +1493,9 @@ use yii\bootstrap\ActiveForm;
 
             /** It may be 'if' with only one connected port!
              * But two links to a same cell is ok*/
-            if((code.localeCompare("if") === 0)) {
-                let links = graph.getConnectedLinks(current_cell, { outbound: true });
-                if(links.length < 2) {
+            if ((code.localeCompare("if") === 0)) {
+                let links = graph.getConnectedLinks(current_cell, {outbound: true});
+                if (links.length < 2) {
                     log("Error: one of ports of 'if' command is not connected!");
                     log("Warning: Next execution will continue from start cell");
                     current_cell = start_cell;
@@ -1469,7 +1503,7 @@ use yii\bootstrap\ActiveForm;
             }
 
             /** Successor can be a finish cell*/
-            if(finish_cell === out_neighbors[0]) {
+            if (finish_cell === out_neighbors[0]) {
                 log("Finish cell reached during execution!");
                 log("Execution can be continued from start cell");
                 current_cell = start_cell;
@@ -1483,7 +1517,7 @@ use yii\bootstrap\ActiveForm;
         else if (out_neighbors.length === 2) {
             /** That is the 'if' case.*/
             if (code.localeCompare("if") === 0) {
-                if(res.localeCompare("true") === 0) {
+                if (res.localeCompare("true") === 0) {
                     /** True */
                     current_cell = out_neighbors[0];
                 }
@@ -1513,27 +1547,27 @@ use yii\bootstrap\ActiveForm;
     function composeFlags(cell) {
         // Prepare flags of a command, remember that will be space in end of flags string
         let flags = "";
-        flags += cell.attributes.input_flags.reduce(function (acc,flag_str,i) {
-            if(i===cell.attributes.input_flags.length-1){
+        flags += cell.attributes.input_flags.reduce(function (acc, flag_str, i) {
+            if (i === cell.attributes.input_flags.length - 1) {
                 acc += flag_str;
             }
-            else{
+            else {
                 acc += (flag_str + " ");
             }
             return acc;
-        },"");
+        }, "");
         return flags;
     }
 
     function composeParams(cell) {
         let params = "";
-        let i=0;
-        for(param in cell.attributes.input_params){
+        let i = 0;
+        for (param in cell.attributes.input_params) {
             let keys = Object.keys(cell.attributes.input_params);
-            if(i===keys.length-1){
+            if (i === keys.length - 1) {
                 params += (cell.attributes.input_params[param]);
             }
-            else{
+            else {
                 params += (cell.attributes.input_params[param] + ' ');
             }
             i++;
@@ -1544,21 +1578,21 @@ use yii\bootstrap\ActiveForm;
     function collectUserVariables() {
         let all_cells = graph.getCells(); // Including links
 
-        for(i = 0; i < all_cells.length; i++) {
+        for (i = 0; i < all_cells.length; i++) {
             let graph_element = all_cells[i];
 
             /** Start and finish cells cannot have variables*/
-            if( !(graph_element === start_cell) && !(graph_element === finish_cell) ) {
+            if (!(graph_element === start_cell) && !(graph_element === finish_cell)) {
 
                 /** Avoid links, only cells*/
-                if(graph_element.attributes.type.localeCompare("html.Element") === 0 ) {
+                if (graph_element.attributes.type.localeCompare("html.Element") === 0) {
                     let var_in_arr = graph_element.attributes.input_var_in.split("$");
 
                     /** Get only variables, not user string inputs*/
-                    if(var_in_arr.length > 1 && var_in_arr[0].localeCompare("") === 0) {
+                    if (var_in_arr.length > 1 && var_in_arr[0].localeCompare("") === 0) {
 
                         /** Avoid reassignment of variables gotten from previous execution */
-                        if(!Object.keys(user_variables).includes(var_in_arr[1])) {
+                        if (!Object.keys(user_variables).includes(var_in_arr[1])) {
                             user_variables[var_in_arr[1]] = "";
                         }
                     }
@@ -1566,10 +1600,10 @@ use yii\bootstrap\ActiveForm;
                     let var_out_arr = graph_element.attributes.input_var_out.split("$");
 
                     /** Get only variables, not user string inputs*/
-                    if(var_out_arr.length > 1 && var_out_arr[0].localeCompare("") === 0) {
+                    if (var_out_arr.length > 1 && var_out_arr[0].localeCompare("") === 0) {
 
                         /** Avoid reassignment of variables gotten from previous execution */
-                        if(!Object.keys(user_variables).includes(var_out_arr[1])) {
+                        if (!Object.keys(user_variables).includes(var_out_arr[1])) {
                             user_variables[var_out_arr[1]] = "";
                         }
                     }

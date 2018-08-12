@@ -3,8 +3,8 @@
 namespace app\controllers;
 
 use app\models\BuildForm;
-use app\models\InputFlowForm;
-use app\models\LoadFlowForm;
+use app\models\ExecuteForm;
+use app\models\FlowForm;
 use app\models\Users;
 use app\models\Workgroups;
 use app\models\Flows;
@@ -37,7 +37,7 @@ class AmdocsAppController extends \yii\web\Controller
             return 'Запрос принят!';
         }
         $form = Yii::$app->request->post('BuildForm');
-        $test = Yii::$app->request->post('InputFlowForm');
+        $test = Yii::$app->request->post('ExecuteForm');
 
         $kuku = $test['flow'];
 
@@ -107,13 +107,40 @@ class AmdocsAppController extends \yii\web\Controller
 
     public function actionSaveFlow()
     {
-        if (Yii::$app->request->isAjax) {
-            $data = Yii::$app->request->post();
+        $model = new Flows();
 
-            $graph = $data['graph'];
-            $bytes_num = file_put_contents('graph.txt',$graph);
-            return ($bytes_num > 0)? "Success" : "Error";
+        $flow = "";
+        $from_index = Yii::$app->request->post('FlowForm');
+        if($from_index != null) {
+            $graph=$from_index['json_graph'];
+            $flow=$graph;
         }
+
+        $form = Yii::$app->request->post('Flows');
+        if($form != null) {
+
+            /** Assign a proper new ID*/
+            $size = count(Flows::find()->all());
+            $model->id  = strval($size+1);
+            $model->user_id = $form['user_id'];
+            $model->name = $form['name'];
+            $model->description = $form['description'];
+            $model->flow = $form['flow'];
+
+            $private_arr = Yii::$app->request->post('privateCommandCheckBox');
+            $model->private = ($private_arr == null)? '0' : '1';
+
+
+            if($model->validate()){
+                $model->save();
+                Yii::$app->session->setFlash('flowSubmitted');
+            }
+            else{
+                Yii::$app->session->setFlash('flowValidationFailed');
+            }
+        }
+
+        return $this->render('save-flow',['model'=>$model , 'flow' => $flow]);
     }
 
     public function actionLoadFlow()
@@ -138,7 +165,7 @@ class AmdocsAppController extends \yii\web\Controller
                     $group_flows[] = $u_flow;
                 }
             }
-            $model = new LoadFlowForm();
+            $model = new FlowForm();
 
             return $this->render('load-flow', ['flows' => $group_flows, 'model' => $model]);
         }
@@ -192,7 +219,8 @@ class AmdocsAppController extends \yii\web\Controller
         if (Yii::$app->user->isGuest) {
             return $this->actionLogin();
         }
-        $model = new InputFlowForm();
+        $input_flow_model = new ExecuteForm();
+        $save_flow_model = new FlowForm();
 
         $basic_commands = Commands::find()->where(['username' => 'basic'])->orderBy('id')->all();
 
@@ -218,38 +246,25 @@ class AmdocsAppController extends \yii\web\Controller
                     'private' => "1" ])->
             orderBy('ID')->all();
 
-        //All commands are needed for dynamically creating JointJS html.ElementView classes
-        $all_commands = Commands::find()->all();
-
         $json_graph = "";
         $json_graph_name = "";
 
-        $json_loaded_graph_form = Yii::$app->request->post('LoadFlowForm');
+        $json_loaded_graph_form = Yii::$app->request->post('FlowForm');
         if($json_loaded_graph_form) {
-            $json_graph = $json_loaded_graph_form['JSON_graph'];
+            $json_graph = $json_loaded_graph_form['json_graph'];
             $json_graph_name = $json_loaded_graph_form['graph_name'];
         }
 
 
-        return $this->render('index', ['model' => $model,
+        return $this->render('index', ['input_flow_model' => $input_flow_model,
+                                            'save_flow_model' => $save_flow_model,
                                             'basic_commands' => $basic_commands,
                                             'group_commands' => $group_commands,
                                             'user_commands' => $user_commands,
-                                            'all_commands' => $all_commands,
                                             'json_graph' => $json_graph,
                                             'json_graph_name' => $json_graph_name]);
     }
 
-    public function actionGetAllCommands(){
-        if (Yii::$app->request->isAjax) {
-            //All commands are needed for dynamically creating JointJS html.ElementView classes
-            $all_commands = Commands::find()->orderBy('ID')->all();
-
-            $res = ArrayHelper::toArray($all_commands);
-
-            return json_encode($res);
-        }
-    }
 
     public function actionLogin()
     {
@@ -306,5 +321,6 @@ class AmdocsAppController extends \yii\web\Controller
         }
         return $this->render('save');
     }
+
 
 }

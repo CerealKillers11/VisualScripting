@@ -24,13 +24,14 @@ $this->params['breadcrumbs'][] = $this->title;
 
     <div class="container">
         <h2>Searching flows to load</h2>
-        <p>Type something in the input field to search the table for user id, flow name or description:</p>
+        <p>Type something in the input field to search the table for user id, privacy, flow name or description:</p>
         <input class="form-control" id="user-input" type="text" placeholder="Search..">
         <br>
         <table class="table table-bordered table-striped">
             <thead>
                 <tr>
                     <th>User ID</th>
+                    <th>Privacy</th>
                     <th>Flow Name</th>
                     <th>Flow Description</th>
                     <th>Load</th>
@@ -43,13 +44,14 @@ $this->params['breadcrumbs'][] = $this->title;
                         'action' => 'index.php',
                         'method' => 'post']); ?>
 
-                    <?= $form->field($model, 'JSON_graph')->hiddenInput(['value' =>
+                    <?= $form->field($model, 'json_graph')->hiddenInput(['value' =>
                         $flow->flow])->label(false); ?>
                     <?= $form->field($model, 'graph_name')->hiddenInput(['value' =>
                         $flow->name])->label(false); ?>
 
                     <tr>
                         <td><?= Html::encode("{$flow->user_id}"); ?></td>
+                        <td><?php echo ($flow->private == 0)? 'Public' : 'Private' ?></td>
                         <td><?= Html::encode("{$flow->name}"); ?></td>
                         <td><?= Html::encode("{$flow->description}"); ?></td>
                         <td>

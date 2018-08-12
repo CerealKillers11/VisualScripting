@@ -12,6 +12,7 @@ use Yii;
  * @property string $name
  * @property string $description
  * @property string $flow
+ * @property int $private
  *
  * @property Users $user
  */
@@ -31,8 +32,8 @@ class Flows extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['id', 'user_id', 'name', 'description', 'flow'], 'required'],
-            [['id'], 'integer'],
+            [['id', 'user_id', 'name', 'description', 'flow', 'private'], 'required'],
+            [['id', 'private'], 'integer'],
             [['description', 'flow'], 'string'],
             [['user_id'], 'string', 'max' => 50],
             [['name'], 'string', 'max' => 100],
@@ -52,6 +53,7 @@ class Flows extends \yii\db\ActiveRecord
             'name' => 'Name',
             'description' => 'Description',
             'flow' => 'Flow',
+            'private' => 'Private',
         ];
     }
 

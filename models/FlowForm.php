@@ -12,9 +12,9 @@ use yii\base\Model;
  * This is the model class for JSON-graph to be loaded.
  *
  */
-class LoadFlowForm extends Model
+class FlowForm extends Model
 {
-    public $JSON_graph;
+    public $json_graph;
     public $graph_name;
 }
 
