@@ -4,8 +4,10 @@ namespace app\controllers;
 
 use app\models\BuildForm;
 use app\models\InputFlowForm;
+use app\models\LoadFlowForm;
 use app\models\Users;
 use app\models\Workgroups;
+use app\models\Flows;
 use Yii;
 use yii\filters\AccessControl;
 use yii\helpers\ArrayHelper;
@@ -77,8 +79,6 @@ class AmdocsAppController extends \yii\web\Controller
         return $this->render('build',['model'=> $model,'script' => $kuku]);
     }
 
-
-
     public function actionExecute(){
         if(Yii::$app->request->isAjax){
             $data = Yii::$app->request->post();
@@ -122,9 +122,27 @@ class AmdocsAppController extends \yii\web\Controller
             $graph = file_get_contents('graph.txt');
             return ($graph == "FALSE")?  "Error" : $graph;
         }
+        else {
+
+            //Now we need to find all users of his group
+            $user = Users::findOne(Yii::$app->user->identity->getId());
+            $group = Workgroups::findOne($user->workgroup);
+            $users_from_group = Users::find()->where(['workGroup' => $group->workGroup])->all();
+            $group_flows = [];
+
+            foreach($users_from_group as $u) {
+                $u_flows = Flows::find()->where(['user_id' => $u->attributes['id'] ])
+                    ->orderBy('id')
+                    ->all();
+                foreach ($u_flows as $u_flow) {
+                    $group_flows[] = $u_flow;
+                }
+            }
+            $model = new LoadFlowForm();
+
+            return $this->render('load-flow', ['flows' => $group_flows, 'model' => $model]);
+        }
     }
-
-
 
     public function actionAddCommand()
     {
@@ -203,11 +221,23 @@ class AmdocsAppController extends \yii\web\Controller
         //All commands are needed for dynamically creating JointJS html.ElementView classes
         $all_commands = Commands::find()->all();
 
+        $json_graph = "";
+        $json_graph_name = "";
+
+        $json_loaded_graph_form = Yii::$app->request->post('LoadFlowForm');
+        if($json_loaded_graph_form) {
+            $json_graph = $json_loaded_graph_form['JSON_graph'];
+            $json_graph_name = $json_loaded_graph_form['graph_name'];
+        }
+
+
         return $this->render('index', ['model' => $model,
                                             'basic_commands' => $basic_commands,
                                             'group_commands' => $group_commands,
                                             'user_commands' => $user_commands,
-                                            'all_commands' => $all_commands]);
+                                            'all_commands' => $all_commands,
+                                            'json_graph' => $json_graph,
+                                            'json_graph_name' => $json_graph_name]);
     }
 
     public function actionGetAllCommands(){
@@ -220,8 +250,6 @@ class AmdocsAppController extends \yii\web\Controller
             return json_encode($res);
         }
     }
-
-
 
     public function actionLogin()
     {

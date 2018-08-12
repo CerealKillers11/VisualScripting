@@ -292,8 +292,23 @@ use yii\bootstrap\ActiveForm;
         <?= Html::button('Save as flow', ['id' => 'save-flow-button',
             'class' => 'btn btn-primary']); ?>
 
-        <?= Html::button('Load flow', ['id' => 'load-flow-button',
-            'class' => 'btn btn-primary']); ?>
+
+        <div class="col-sm-1">
+            <?php $form = ActiveForm::begin(['id' => 'load-flow-form',
+                'fieldConfig' => ['enableLabel'=>false], // Do not show the labels in view
+                'action' => 'index.php?r=amdocs-app%2Fload-flow', //TO-DO pretty urls
+                'method' => 'post',
+            ]); ?>
+
+            <?= Html::submitButton('Load flow', ['name' => 'load-flow-button',
+                'class' => 'btn btn-primary']); ?>
+
+            <?php ActiveForm::end(); ?>
+        </div>
+
+
+
+
 
         <?= Html::button('Clear flow', ['id' => 'clear-flow-button',
             'class' => 'btn btn-primary']); ?>
@@ -651,11 +666,10 @@ use yii\bootstrap\ActiveForm;
     /**########### Initial - done at start ###########################*/
     /**## Place here all scrips which is used per document at start ##*/
 
-    let acc = document.getElementsByClassName("accordion");
-    let i;
+    let accordions = document.getElementsByClassName("accordion");
 
-    for (i = 0; i < acc.length; i++) {
-        acc[i].addEventListener("click", function () {
+    for (let i = 0; i < accordions.length; i++) {
+        accordions[i].addEventListener("click", function () {
             this.classList.toggle("active");
             let panel = this.nextElementSibling;
             if (panel.style.maxHeight) {
@@ -668,7 +682,6 @@ use yii\bootstrap\ActiveForm;
 
     document.addEventListener("dragstart", function(event) {
         if ( event.target.className === "library_element" ) {
-            // event.target.style.border = "3px dotted red";
             let paper_holder = document.getElementById('rightcolumn');
             paper_holder.style.border = "3px dotted red";
         }
@@ -676,7 +689,6 @@ use yii\bootstrap\ActiveForm;
 
     document.addEventListener("dragend", function(event) {
         if ( event.target.className === "library_element" ) {
-            // event.target.style.border = "";
             let paper_holder = document.getElementById('rightcolumn');
             paper_holder.style.border = "";
         }
@@ -698,42 +710,6 @@ use yii\bootstrap\ActiveForm;
         });
     });
 
-    $("#load-flow-button").click( function() {
-        $.ajax({
-            url: 'index.php?r=amdocs-app%2Fload-flow',
-            type: 'POST',
-            data: '', //POST-style
-            success: function(str_graph){
-                graph.clear();
-                graph.fromJSON(JSON.parse(str_graph));
-
-                let all_cells = graph.getCells();
-
-                for(let i=0;i <all_cells.length;i++) {
-                    if(all_cells[i].attributes.type.localeCompare("basic.Rect") === 0) {
-                        if(all_cells[i].attributes.ports.items[0].name.localeCompare("out") === 0) {
-                            /** This is definitely start cell! */
-                            start_cell = all_cells[i];
-                        } else if(all_cells[i].attributes.ports.items[0].name.localeCompare("in") === 0) {
-                            /** This is definitely finish cell! */
-                            finish_cell = all_cells[i];
-                        }
-                    }
-                }
-
-                current_cell = start_cell;
-
-                log();
-
-
-            },
-            error: function(){
-                alert("Unable to save flow!");
-            }
-        });
-
-    });
-
     $("#clear-flow-button").click( function() {
         graph.clear();
 
@@ -747,6 +723,109 @@ use yii\bootstrap\ActiveForm;
 
         current_cell = start_cell;
     });
+
+    $(document).ready( function () {
+        $("#input-flow-form").on('beforeSubmit', function() {
+
+            // Collecting user variables - better to define them at start of a script
+            // and change them on-demand during the flow.
+            // At start, all of them are empty strings.
+            if(current_cell === start_cell) {
+                collectUserVariables();
+                let start_cell_successors = graph.getNeighbors(start_cell);
+                if(start_cell_successors.length === 0) {
+                    log("Error: Start must be connected. Aborting execution.");
+                    return false;
+                }
+                else {
+                    current_cell = start_cell_successors[0];
+                }
+            }
+
+            /** Try to execute one command - current cell,
+             * and move to next. What is included in execution:
+             * 1) Collect variables from model, take input value from our array.
+             * 2) Construct a command inside small script - described later.
+             * 3) Send command to server via AJAX with script as parameter.
+             * 4) Execute command on a server and take return value and output.
+             * 5) Print the output to a log
+             * 6) Save variables in our array*/
+
+
+            /** At first, taking input of current cell*/
+            /** Input can be not only a variable, also some value. */
+
+            let input = "";
+            let splitted_input = current_cell.attributes.input_var_in.split("$");
+
+            if(splitted_input.length > 1 && splitted_input[0].localeCompare("")===0) {
+
+                /** This is variable because starts from $ */
+                input =  user_variables[ splitted_input[1] ];
+            }
+            else {
+
+                /** This is just a some user value, not variable.
+                 * User values must not contain dollars! */
+                input = splitted_input[0];
+            }
+
+            /** Constructing the current command's script. */
+            let script = "";
+
+            let code = current_cell.attributes.input_command_code;
+            if(code.localeCompare("if") === 0) {
+                script = buildIfCommandScript();
+            }
+            else if(code.localeCompare("for") === 0) {
+
+            }
+            else {
+                script = buildOtherCommandScript(input);
+            }
+
+            /** Sending the script to a server via AJAX */
+
+            $.ajax({
+                url: 'index.php?r=amdocs-app%2Fexecute',
+                type: 'POST',
+                data: 'script='+ script + '&'+'code='+code, //POST-style
+                success: function(res){
+
+                    /** Cut the possible \n at end of result */
+                    if(res.charAt(res.length-1) === '\n') {
+                        res = res.slice(0,res.length-1);
+                    }
+
+
+                    let code = current_cell.attributes.input_command_code;
+
+                    let log_output = (res.localeCompare("")===0)?
+
+                        "Executed command: " + code + ", no output"
+                        :
+                        "Executed command: " + code + ", output: " + res;
+
+                    log(log_output);
+
+                    /** Now need to assign the output variable, if was. */
+                    assignVariableFromOutput(res);
+
+                    /** Go to next command. Decide based on connected ports. */
+                    moveToNextCommand(res);
+
+                },
+                error: function(){
+                    alert('Error!');
+                }
+            });
+
+            /** We don't really going to send a form - avoiding refreshing of page */
+            return false;
+        });
+    });
+
+    /**###############################################################*/
 
 
     // Override dia.Link class for enabling to see the arrow cursor and disable double marking.
@@ -825,14 +904,6 @@ use yii\bootstrap\ActiveForm;
         defaultLink: new joint.dia.Link()
 
     });
-
-    var start_cell = createStartCell();
-    start_cell.position(350, 30);
-    graph.addCell(start_cell);
-
-    var finish_cell = createFinishCell();
-    finish_cell.position(350, 400);
-    graph.addCell(finish_cell);
 
 
     /** Define a namespace for our html elements. */
@@ -1052,6 +1123,73 @@ use yii\bootstrap\ActiveForm;
     Logger.show();
     Logger.toggle();
 
+    var start_cell;
+    var finish_cell;
+
+    intializeNewOrLoadedGraph();
+
+    /**########### Execution process ###########################*/
+
+    /** Real execution of commands done on server.
+    * We need to save the flow graph during execution.
+    * So the per-command execution is done via ajax. */
+
+    /** At start, we actually need to start a flow from start cell.
+     * Initialized from loaded graph or created if no load. */
+    var current_cell = start_cell;
+
+    /** User variables are changed during the execution,
+    * we need to save them during the execution of commands.
+    * Pay attention - this is associative array. */
+    var user_variables = [];
+
+
+    /** Script execution helpers */
+
+
+
+
+    /** Graph creation helpers */
+
+    function intializeNewOrLoadedGraph() {
+        /** We need a way to get view parameter - we may request to load a script from db*/
+        let loaded_graph = <?php echo json_encode($json_graph) ?>;
+        let loaded_graph_name = <?php echo json_encode($json_graph_name) ?>;
+
+        if(loaded_graph.localeCompare("") === 0){
+            /** There is no loaded graph.
+             * Build new start and finish cells. */
+            start_cell = createStartCell();
+            start_cell.position(350, 30);
+            graph.addCell(start_cell);
+
+            finish_cell = createFinishCell();
+            finish_cell.position(350, 400);
+            graph.addCell(finish_cell);
+        }
+        else {
+            /** Parse a loaded graph from JSON
+             *  and restore cells. */
+
+            log("Uploaded flow: " + loaded_graph_name);
+
+            graph.fromJSON(JSON.parse(loaded_graph));
+
+            let all_cells = graph.getCells();
+
+            for(let i=0;i <all_cells.length;i++) {
+                if(all_cells[i].attributes.type.localeCompare("basic.Rect") === 0) {
+                    if(all_cells[i].attributes.ports.items[0].name.localeCompare("out") === 0) {
+                        /** This is definitely start cell! */
+                        start_cell = all_cells[i];
+                    } else if(all_cells[i].attributes.ports.items[0].name.localeCompare("in") === 0) {
+                        /** This is definitely finish cell! */
+                        finish_cell = all_cells[i];
+                    }
+                }
+            }
+        }
+    }
 
     function createStartCell() {
         return new joint.shapes.basic.Rect({
@@ -1162,128 +1300,7 @@ use yii\bootstrap\ActiveForm;
     }
 
 
-
-
-
-
-    /**########### Execution process ###########################*/
-
-    // Real execution of commands done on server.
-    // We need to save the flow graph during execution.
-    // So the per-command execution is done via ajax.
-
-    // At start, we actually need to start a flow from start cell.
-    var current_cell = start_cell;
-
-    // User variables are changed during the execution, we need to save
-    // them during the execution of commands.
-    // This is associative array.
-    var user_variables = [];
-
-
-    $(document).ready(function () {
-        $("#input-flow-form").on('beforeSubmit', function () {
-
-
-            // Collecting user variables - better to define them at start of a script
-            // and change them on-demand during the flow.
-            // At start, all of them are empty strings.
-            if(current_cell === start_cell) {
-                collectUserVariables();
-                let start_cell_successors = graph.getNeighbors(start_cell);
-                if(start_cell_successors.length === 0) {
-                    log("Error: Start must be connected. Aborting execution.");
-                    return false;
-                }
-                else {
-                    current_cell = start_cell_successors[0];
-                }
-            }
-
-            /** Try to execute one command - current cell,
-             * and move to next. What is included in execution:
-             * 1) Collect variables from model, take input value from our array.
-             * 2) Construct a command inside small script - described later.
-             * 3) Send command to server via AJAX with script as parameter.
-             * 4) Execute command on a server and take return value and output.
-             * 5) Print the output to a log
-             * 6) Save variables in our array*/
-
-
-            /** At first, taking input of current cell*/
-            /** Input can be not only a variable, also some value. */
-
-            let input = "";
-            let splitted_input = current_cell.attributes.input_var_in.split("$");
-
-            if(splitted_input.length > 1 && splitted_input[0].localeCompare("")===0) {
-
-                /** This is variable because starts from $ */
-                input =  user_variables[ splitted_input[1] ];
-            }
-            else {
-
-                /** This is just a some user value, not variable.
-                 * User values must not contain dollars! */
-                input = splitted_input[0];
-            }
-
-            /** Constructing the current command's script. */
-            let script = "";
-
-            let code = current_cell.attributes.input_command_code;
-            if(code.localeCompare("if") === 0) {
-                script = buildIfCommandScript();
-            }
-            else if(code.localeCompare("for") === 0) {
-
-            }
-            else {
-                script = buildOtherCommandScript(input);
-            }
-
-            /** Sending the script to a server via AJAX */
-
-            $.ajax({
-                url: 'index.php?r=amdocs-app%2Fexecute',
-                type: 'POST',
-                data: 'script='+ script + '&'+'code='+code, //POST-style
-                success: function(res){
-
-                    /** Cut the possible \n at end of result */
-                    if(res.charAt(res.length-1) === '\n') {
-                        res = res.slice(0,res.length-1);
-                    }
-
-
-                    let code = current_cell.attributes.input_command_code;
-
-                    let log_output = (res.localeCompare("")===0)?
-
-                        "Executed command: " + code + ", no output"
-                                            :
-                        "Executed command: " + code + ", output: " + res;
-
-                    log(log_output);
-
-                    /** Now need to assign the output variable, if was. */
-                    assignVariableFromOutput(res);
-
-                    /** Go to next command. Decide based on connected ports. */
-                    moveToNextCommand(res);
-
-                },
-                error: function(){
-                    alert('Error!');
-                }
-            });
-
-            /** We don't really going to send a form - avoiding refreshing of page */
-            return false;
-
-        });
-    });
-
+    /** Script building helpers */
 
     function buildOtherCommandScript(input) {
 
@@ -1493,10 +1510,6 @@ use yii\bootstrap\ActiveForm;
         log();
     }
 
-
-    // Script build's helper functions.
-    //-----------------------------------------
-
     function composeFlags(cell) {
         // Prepare flags of a command, remember that will be space in end of flags string
         let flags = "";
@@ -1564,8 +1577,6 @@ use yii\bootstrap\ActiveForm;
             }
         }
     }
-
-    //-----------------------------------------
 
 
 </script>
