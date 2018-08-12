@@ -228,6 +228,7 @@ var Logger = (function()
                 var span = document.createElement("span");  // for coloring text
                 span.style.color = "#afa";
                 span.style.fontWeight = "bold";
+                span.className="log-header";
 
                 // the first message in log
                 var msg = "===== VisualScripting Log Started at " +
@@ -307,6 +308,8 @@ var Logger = (function()
                 timeDiv.setAttribute("style", "color:#999;" +
                                               "float:left;");
 
+                timeDiv.setAttribute("class", "log-timestamp");
+
                 var timeNode = document.createTextNode(getTime() + "\u00a0");
                 timeDiv.appendChild(timeNode);
 
@@ -314,6 +317,9 @@ var Logger = (function()
                 var msgDiv = document.createElement("div");
                 msgDiv.setAttribute("style", "word-wrap:break-word;" +  // wrap msg
                                              "margin-left:6.0em;");     // margin-left = 9 * ?
+
+                msgDiv.setAttribute("class", "log-message");
+
                 if(!msgDefined)
                     msgDiv.style.color = "#afa"; // override color if msg is not defined
 

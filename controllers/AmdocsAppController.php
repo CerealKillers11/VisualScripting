@@ -265,7 +265,6 @@ class AmdocsAppController extends \yii\web\Controller
                                             'json_graph_name' => $json_graph_name]);
     }
 
-
     public function actionLogin()
     {
         if (!Yii::$app->user->isGuest) {
@@ -322,5 +321,18 @@ class AmdocsAppController extends \yii\web\Controller
         return $this->render('save');
     }
 
+    public function actionSaveLog(){
+        if(Yii::$app->request->isAjax){
+            $filename = "";
+            $filename = $filename . Yii::$app->user->identity->getId() . '--' . date("Y-m-d--H-i-s") . '.log';
 
+            $data = Yii::$app->request->post();
+            $json_log = $data['json_log'];
+            $log = json_decode($json_log);
+
+            file_put_contents('log/'.$filename, $log);
+
+            return $filename;
+        }
+    }
 }

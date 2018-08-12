@@ -1,0 +1,57 @@
+===== VisualScripting Log Started at 2018-08-13, 02:22:26, (Logger version 1.17) =====
+
+
+02:22:26 Uploaded flow: search_for_kuku_example
+
+02:22:31 Executed command: cat, output: Kuku
+
+02:22:31 
+
+02:22:31 Ruku
+
+02:22:31 
+
+02:22:31 Buku
+
+02:22:31 
+
+02:22:31 Ukuk
+
+02:22:31 
+
+02:22:31 
+
+02:22:31 Bakuk
+
+02:22:31 Variable assigned: $x = "Kuku
+
+02:22:31 
+
+02:22:31 Ruku
+
+02:22:31 
+
+02:22:31 Buku
+
+02:22:31 
+
+02:22:31 Ukuk
+
+02:22:31 
+
+02:22:31 
+
+02:22:31 Bakuk"
+
+02:22:31 
+
+02:22:33 Executed command: grep, output: Kuku Ruku Buku Ukuk Bakuk
+
+02:22:33 Variable assigned: $y = "Kuku Ruku Buku Ukuk Bakuk"
+
+02:22:33 Finish cell reached during execution!
+
+02:22:33 Execution can be continued from start cell
+
+02:22:33 
+

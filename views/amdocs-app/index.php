@@ -90,7 +90,7 @@ use yii\bootstrap\ActiveForm;
             overflow-y: scroll;
 
         }
-        
+
         .column {
             float: left;
             width: 10%;
@@ -279,6 +279,11 @@ use yii\bootstrap\ActiveForm;
     </style>
 
     <div class="row">
+
+        <div class="column">
+            <?= Html::button('Save log', ['id' => 'save-log-button',
+                'class' => 'btn btn-primary']); ?>
+        </div>
 
         <div class="column">
 
@@ -721,28 +726,47 @@ use yii\bootstrap\ActiveForm;
         }
     });
 
-    $("#save-flow-button").click(function () {
+    $("#save-log-button").click(function () {
+        let logger = document.getElementById('logger');
+        NodeList.prototype.forEach = Array.prototype.forEach;
+        let children = logger.childNodes;
 
-        // $.ajax({
-        //     url: 'index.php?r=amdocs-app%2Fsave-flow',
-        //     type: 'POST',
-        //     data: 'graph='+ str_graph, //POST-style
-        //     success: function(res){
-        //         alert("Server respond: " + res);
-        //     },
-        //     error: function(){
-        //         alert("Unable to save flow!");
-        //     }
-        // });
-    });
+        let log_message = "";
+        children.forEach(function(item){
 
-    $(document).ready(function () {
-        $("#save-flow-form").on('beforeSubmit', function () {
-            let str_graph = JSON.stringify(graph.toJSON());
-            document.getElementById('flowform-json_graph').value = str_graph;
+            if(item.className.localeCompare("log-header") === 0) {
+                log_message += item.textContent + "\n";
+            }
+            else if (item.className.localeCompare("log-timestamp") === 0) {
+                log_message += item.textContent;
+            }
+            else if (item.className.localeCompare("log-message") === 0) {
+                log_message += item.textContent + "\n";
+            }
+            else {
+                log_message +=("\n");
+            }
+
+            /** textContent */
+        });
+        console.log(log_message);
+
+        let json_log = JSON.stringify(log_message);
+
+        $.ajax({
+            url: 'index.php?r=amdocs-app%2Fsave-log',
+            type: 'POST',
+            data: 'json_log=' + json_log, //POST-style
+            success: function (res) {
+                alert('Log succesfully saved, filename: ' + res);
+                log('Log succesfully saved, filename: ' + res);
+
+            },
+            error: function () {
+                alert('Unable to save a log - server error!');
+            }
         });
     });
-
 
     $("#clear-flow-button").click(function () {
         graph.clear();
@@ -758,6 +782,13 @@ use yii\bootstrap\ActiveForm;
         current_cell = start_cell;
 
         log("Flow was cleared.")
+    });
+
+    $(document).ready(function () {
+        $("#save-flow-form").on('beforeSubmit', function () {
+            let str_graph = JSON.stringify(graph.toJSON());
+            document.getElementById('flowform-json_graph').value = str_graph;
+        });
     });
 
     $(document).ready(function () {
