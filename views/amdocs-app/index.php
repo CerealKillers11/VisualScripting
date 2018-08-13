@@ -462,9 +462,13 @@ use yii\bootstrap\ActiveForm;
             // Template string can vary depending on command, e.g. 'for' and 'if'.
             // -------------------------------------------------------------------------
 
+            let have_input_variable = 0;
+            let have_output_variable = 0;
+
             let template_str = '';
 
-            if (command_name.localeCompare('for') == 0) { // For loop have no input and output variables
+            if (command_name.localeCompare('for') === 0 || command_name.localeCompare('assignment') === 0) {
+                // For loop or assignment have no input and output variables
                 template_str =
                     (['<div class="html-element">',
                             '<button class="delete">x</button>',
@@ -478,7 +482,7 @@ use yii\bootstrap\ActiveForm;
                         )
                     ).join('');
             }
-            else if (command_name.localeCompare('if') == 0) { // Input is condition, output is true/false
+            else if (command_name.localeCompare('if') === 0) { // Input is condition, output is true/false
                 template_str =
                     (['<div class="html-element">',
                             '<button class="delete">x</button>',
@@ -494,6 +498,7 @@ use yii\bootstrap\ActiveForm;
                             )
                         )
                     ).join('');
+                have_output_variable = 1;
             }
             else { // Other command with possible input and output
                 template_str =
@@ -516,6 +521,7 @@ use yii\bootstrap\ActiveForm;
                             )
                         )
                     ).join('');
+                have_input_variable = 1;
             }
 
             // Setting all command params be empty string by default
@@ -529,6 +535,10 @@ use yii\bootstrap\ActiveForm;
             // joint.shapes.html = {};
             joint.shapes.html.Element = joint.shapes.basic.Rect.extend({
                 defaults: joint.util.deepSupplement({
+                    markup: '<g class="rotatable"><rect class="body"/><text class="label"/></g>',
+                    portMarkup: '<circle class="port-body"/>',
+                    portLabelMarkup: '<text class="port-label"/>',
+
                     type: 'html.Element',
                     attrs: {
                         rect: {stroke: 'none', 'fill-opacity': 0}
@@ -549,351 +559,26 @@ use yii\bootstrap\ActiveForm;
             // Vary box sizes depending on command parameters.
             // -----------------------------------------------------------
 
-            let additionalHeight = (flags_str_arr.length - 1) * 15 + (parameters_str_arr.length - 1) * 15 + 160;
+            let actual_cell_height =  40 +
+                (parameters_str_arr.length) * 25 +
+                (flags_str_arr.length) * 15 +
+                have_input_variable * 130 +
+                have_output_variable * 130;
+
 
             // Create JointJS elements and add them to the graph as usual.
             // -----------------------------------------------------------
 
-            if (command_name.localeCompare('if') == 0) {
-                let if_element = new joint.shapes.html.Element({
-                    markup: '<g class="rotatable"><rect class="body"/><text class="label"/></g>',
-                    portMarkup: '<circle class="port-body"/>',
-                    portLabelMarkup: '<text class="port-label"/>',
-
-                    position: {x: 20, y: 20},
-                    size: {
-                        width: 200,
-                        height: additionalHeight
-                    },
-                    ports: {
-                        groups: {
-                            'in': {
-                                position: 'top',
-                                attrs: {
-                                    '.port-label': {
-                                        fill: '#000',
-                                        text: 'in'
-                                    },
-                                    '.port-body': {
-                                        fill: '#16A085',
-                                        stroke: '#000',
-                                        r: 10,
-                                        magnet: true
-                                    }
-                                },
-                                label: {
-                                    position: {
-                                        name: 'right',
-                                        args: {y: -10, x: -25} // extra arguments for the label layout function, see `layout.PortLabel` section
-                                    }
-                                }
-                            },
-                            'out(true)': {
-                                position: 'bottom',
-                                attrs: {
-                                    '.port-label': {
-                                        fill: '#000',
-                                        text: 'out(true)'
-                                    },
-                                    '.port-body': {
-                                        fill: '#E74C3C',
-                                        stroke: '#000',
-                                        r: 10,
-                                        magnet: true
-                                    },
-                                },
-                                label: {
-                                    position: {
-                                        name: 'right',
-                                        args: {y: +15, x: -65} // extra arguments for the label layout function, see `layout.PortLabel` section
-                                    }
-                                }
-                            },
-                            'out(false)': {
-                                position: 'bottom',
-                                attrs: {
-                                    '.port-label': {
-                                        fill: '#000',
-                                        text: 'out(false)'
-                                    },
-                                    '.port-body': {
-                                        fill: '#E74C3C',
-                                        stroke: '#000',
-                                        r: 10,
-                                        magnet: true
-                                    },
-                                },
-                                label: {
-                                    position: {
-                                        name: 'right',
-                                        args: {y: +15, x: +10} // extra arguments for the label layout function, see `layout.PortLabel` section
-                                    }
-                                }
-                            }
-                        },
-                        items: [
-                            {
-                                name: 'in',
-                                group: 'in',
-                                args: {} // overrides `args` from the group level definition.
-                            },
-                            {
-                                name: 'out(true)',
-                                group: 'out(true)',
-                                args: {dx: -60} // overrides `args` from the group level definition.
-                            },
-                            {
-                                name: 'out(false)',
-                                group: 'out(false)',
-                                args: {dx: +60} // overrides `args` from the group level definition.
-                            }
-                        ]
-                    },
-                    attrs: {
-                        // This is size and other properties of rect which is under the HTML
-                        rect: {
-                            width: 200,
-                            height: additionalHeight
-                        }
-                    },
-                    label: event.dataTransfer.getData("command_name"),
-                });
-
+            if (command_name.localeCompare('if') === 0) {
+                let if_element = createIfCell(actual_cell_height);
                 if_element.addTo(graph);
             }
-            else if (command_name.localeCompare('for') == 0) {
-                let for_element = new joint.shapes.html.Element({
-                    markup: '<g class="rotatable"><rect class="body"/><text class="label"/></g>',
-                    portMarkup: '<circle class="port-body"/>',
-                    portLabelMarkup: '<text class="port-label"/>',
-
-                    position: {x: 20, y: 20},
-                    size: {
-                        width: 200,
-                        height: 90
-                    },
-                    ports: {
-                        groups: {
-                            'in': {
-                                position: 'top',
-                                attrs: {
-                                    '.port-label': {
-                                        fill: '#000',
-                                        text: 'in'
-                                    },
-                                    '.port-body': {
-                                        fill: '#16A085',
-                                        stroke: '#000',
-                                        r: 10,
-                                        magnet: true
-                                    }
-                                },
-                                label: {
-                                    position: {
-                                        name: 'right',
-                                        args: {y: -10, x: -25} // extra arguments for the label layout function, see `layout.PortLabel` section
-                                    }
-                                }
-                            },
-                            'out': {
-                                position: 'bottom',
-                                attrs: {
-                                    '.port-label': {
-                                        fill: '#000',
-                                        text: 'out'
-                                    },
-                                    '.port-body': {
-                                        fill: '#E74C3C',
-                                        stroke: '#000',
-                                        r: 10,
-                                        magnet: true
-                                    },
-                                },
-                                label: {
-                                    position: {
-                                        name: 'right',
-                                        args: {y: +10, x: -35} // extra arguments for the label layout function, see `layout.PortLabel` section
-                                    }
-                                }
-                            }
-                        },
-                        items: [
-                            // initialize port in group 'in'
-                            {
-                                name: 'flow end',
-                                group: 'in',
-                                args: { dx: -50, dy: +70 } // overrides `args` from the group level definition.
-                            },
-                            {
-                                name: 'in',
-                                group: 'in',
-                                args: {} // overrides `args` from the group level definition.
-                            },
-                            {
-                                name: 'flow start',
-                                group: 'out',
-                                args: { dx: -50, dy: -70} // overrides `args` from the group level definition.
-                            },
-                            {
-                                name: 'out',
-                                group: 'out',
-                                args: {} // overrides `args` from the group level definition.
-                            }
-                            // ... other ports
-                        ]
-                    },
-                    attrs: {
-                        // This is size and other properties of rect which is under the HTML
-                        rect: {
-                            stroke: 'none',
-                            'fill-opacity': 0,
-                            width: 200,
-                            height: 70 + additionalHeight
-                        }
-                    },
-                    label: event.dataTransfer.getData("command_name"),
-                });
-
+            else if (command_name.localeCompare('for') === 0) {
+                let for_element = createForLoopCell(actual_cell_height);
                 for_element.addTo(graph);
             }
             else {
-                let command_element = new joint.shapes.html.Element({
-                    markup: '<g class="rotatable"><rect class="body"/><text class="label"/></g>',
-                    portMarkup: '<circle class="port-body"/>',
-                    portLabelMarkup: '<text class="port-label"/>',
-                    position: {x: 20, y: 20},
-
-                    // This is size of overlapping HTML element
-                    size: {
-                        width: 200,
-                        height: 70 + additionalHeight
-                    },
-                    ports: {
-                        groups: {
-                            'in': {
-                                position: 'top',
-                                attrs: {
-                                    '.port-label': {
-                                        fill: '#000',
-                                        text: 'in'
-                                    },
-                                    '.port-body': {
-                                        fill: '#16A085',
-                                        stroke: '#000',
-                                        r: 10,
-                                        magnet: true
-                                    }
-                                },
-                                label: {
-                                    position: {
-                                        name: 'right',
-                                        args: {y: -10} // extra arguments for the label layout function, see `layout.PortLabel` section
-                                    }
-                                }
-                            },
-                            'out': {
-                                position: 'bottom',
-                                attrs: {
-                                    '.port-label': {
-                                        fill: '#000',
-                                        text: 'out'
-                                    },
-                                    '.port-body': {
-                                        fill: '#E74C3C',
-                                        stroke: '#000',
-                                        r: 10,
-                                        magnet: true
-                                    },
-                                },
-                                label: {
-                                    position: {
-                                        name: 'right',
-                                        args: {y: +10} // extra arguments for the label layout function, see `layout.PortLabel` section
-                                    }
-                                }
-                            }
-                        },
-                        items: [
-                            // initialize port in group 'in'
-                            {
-                                name: 'in',
-                                group: 'in',
-                                args: {} // overrides `args` from the group level definition.
-                            },
-                            {
-                                name: 'out',
-                                group: 'out',
-                                args: {} // overrides `args` from the group level definition.
-                            }
-                            // ... other ports
-                        ]
-                    },
-
-                    attrs: {
-                        // This is size and other properties of rect which is under the HTML
-                        rect: {
-                            stroke: 'none',
-                            'fill-opacity': 0,
-                            width: 200,
-                            height: 70 + additionalHeight
-                        }
-                    },
-                    label: event.dataTransfer.getData("command_name"),
-                });
-
-
-                /** joint.shapes.basic.Rect({
-            markup: '<g class="rotatable"><rect class="body"/><text class="label"/></g>',
-            portMarkup: '<circle class="port-body"/>',
-            portLabelMarkup: '<text class="port-label"/>',
-            size: {
-                width: 90,
-                height: 30
-            },
-            ports: {
-                groups: {
-                    'out': {
-                        position: 'bottom',
-                        attrs: {
-                            '.port-label': {
-                                fill: '#000',
-                                text: 'out'
-                            },
-                            '.port-body': {
-                                fill: '#E74C3C',
-                                stroke: '#000',
-                                r: 10,
-                                magnet: true
-                            },
-                        },
-                        label: {
-                            position: {
-                                name: 'right',
-                                args: {y: +10} // extra arguments for the label layout function, see `layout.PortLabel` section
-                            }
-                        },
-                    }
-                },
-                items: [
-                    // initialize port in group 'in'
-                    {
-                        name: 'out',
-                        group: 'out',
-                        args: {} // overrides `args` from the group level definition.
-                    }
-                    // ... other ports
-                ]
-            },
-            attrs: {
-                '.label': {text: 'Start', fill: 'black', 'ref-y': 10},
-                rect: {
-                    fill: 'orange',
-                    width: 90,
-                    height: 30
-                }
-            }
-        });*/
-
+                let command_element = createOtherCommandCell(actual_cell_height,command_name);
                 command_element.addTo(graph);
             }
         }
@@ -911,6 +596,7 @@ use yii\bootstrap\ActiveForm;
             event.dataTransfer.setData("command_code", event.target.getAttribute("command_code"));
             event.dataTransfer.setData("command_description", event.target.getAttribute("command_description"));
         }
+
     </script>
 
 
@@ -1155,17 +841,16 @@ use yii\bootstrap\ActiveForm;
         snapLinks: {radius: 50},
 
         validateConnection: function (cellViewS, magnetS, cellViewT, magnetT, end, linkView) {
-            // Prevent linking from input ports.
-            if (magnetS && magnetS.getAttribute('port-group') === 'in') return false;
             // Prevent linking from output ports to input ports within one element.
             if (cellViewS === cellViewT) return false;
 
-            // Prevent linking to input ports which are already linked.
-            // var links = graph.getConnectedLinks(cellViewT.model, { inbound: true });
-            // if(links.length > 0) return false;
-
             // Prevent linking from input ports.
-            return magnetT && magnetT.getAttribute('port-group') === 'in';
+            if (magnetS && magnetS.getAttribute('port-group') === 'in') return false;
+            if (magnetS && magnetS.getAttribute('port-group') === 'loop-end') return false;
+
+            // Prevent linking to output ports.
+            return magnetT &&
+                (magnetT.getAttribute('port-group') === 'in' || magnetT.getAttribute('port-group') === 'loop-end');
         },
 
         validateMagnet: function (cellView, magnet) {
@@ -1173,7 +858,7 @@ use yii\bootstrap\ActiveForm;
             var port = magnet.getAttribute('port');
             var links = graph.getConnectedLinks(cellView.model, {outbound: true});
             var portLinks = _.filter(links, function (o) {
-                return o.get('source').port == port;
+                return o.get('source').port === port;
             });
             if (portLinks.length > 0) return false;
             // Note that this is the default behaviour. Just showing it here for reference.
@@ -1202,6 +887,10 @@ use yii\bootstrap\ActiveForm;
     /** A dummy, empty implementation of html element. */
     joint.shapes.html.Element = joint.shapes.basic.Rect.extend({
         defaults: joint.util.deepSupplement({
+            markup: '<g class="rotatable"><rect class="body"/><text class="label"/></g>',
+            portMarkup: '<circle class="port-body"/>',
+            portLabelMarkup: '<text class="port-label"/>',
+
             type: 'html.Element',
             attrs: {
                 rect: {stroke: 'none', 'fill-opacity': 0}
@@ -1217,11 +906,6 @@ use yii\bootstrap\ActiveForm;
         }, joint.shapes.basic.Rect.prototype.defaults),
 
     });
-
-
-
-
-
 
 
     /** A real view of html element, model is not depend on it. */
@@ -1440,10 +1124,14 @@ use yii\bootstrap\ActiveForm;
     var user_variables = [];
 
 
+    /**###############################################################*/
     /** Script execution helpers */
+    /**###############################################################*/
 
 
-    /** Graph creation helpers */
+    /**###############################################################*/
+    /** Graph and cell creation helpers */
+    /**###############################################################*/
 
     function intializeNewOrLoadedGraph() {
         /** We need a way to get view parameter - we may request to load a script from db*/
@@ -1593,8 +1281,324 @@ use yii\bootstrap\ActiveForm;
         });
     }
 
+    function createIfCell(actual_cell_height){
+        return new joint.shapes.html.Element({
+            position: {x: 20, y: 20},
+            size: {
+                width: 200,
+                height: actual_cell_height
+            },
+            ports: {
+                groups: {
+                    'in': {
+                        position: 'top',
+                        attrs: {
+                            '.port-label': {
+                                fill: '#000',
+                                text: 'in'
+                            },
+                            '.port-body': {
+                                fill: '#16A085',
+                                stroke: '#000',
+                                r: 10,
+                                magnet: true
+                            }
+                        },
+                        label: {
+                            position: {
+                                name: 'right',
+                                args: {y: -10, x: -25} // extra arguments for the label layout function, see `layout.PortLabel` section
+                            }
+                        }
+                    },
+                    'out(true)': {
+                        position: 'bottom',
+                        attrs: {
+                            '.port-label': {
+                                fill: '#000',
+                                text: 'out(true)'
+                            },
+                            '.port-body': {
+                                fill: '#E74C3C',
+                                stroke: '#000',
+                                r: 10,
+                                magnet: true
+                            },
+                        },
+                        label: {
+                            position: {
+                                name: 'right',
+                                args: {y: +15, x: -65} // extra arguments for the label layout function, see `layout.PortLabel` section
+                            }
+                        }
+                    },
+                    'out(false)': {
+                        position: 'bottom',
+                        attrs: {
+                            '.port-label': {
+                                fill: '#000',
+                                text: 'out(false)'
+                            },
+                            '.port-body': {
+                                fill: '#E74C3C',
+                                stroke: '#000',
+                                r: 10,
+                                magnet: true
+                            },
+                        },
+                        label: {
+                            position: {
+                                name: 'right',
+                                args: {y: +15, x: +10} // extra arguments for the label layout function, see `layout.PortLabel` section
+                            }
+                        }
+                    }
+                },
+                items: [
+                    {
+                        name: 'in',
+                        group: 'in',
+                        args: {} // overrides `args` from the group level definition.
+                    },
+                    {
+                        name: 'out(true)',
+                        group: 'out(true)',
+                        args: {dx: -60} // overrides `args` from the group level definition.
+                    },
+                    {
+                        name: 'out(false)',
+                        group: 'out(false)',
+                        args: {dx: +60} // overrides `args` from the group level definition.
+                    }
+                ]
+            },
+            attrs: {
+                // This is size and other properties of rect which is under the HTML
+                rect: {
+                    width: 200,
+                    height: actual_cell_height
+                }
+            },
+            label: 'if',
+        });
 
+    }
+
+    function createForLoopCell(actual_cell_height){
+        return new joint.shapes.html.Element({
+            position: {x: 20, y: 20},
+            size: {
+                width: 200,
+                height: actual_cell_height
+            },
+            ports: {
+                groups: {
+                    'in': {
+                        position: 'top',
+                        attrs: {
+                            '.port-label': {
+                                fill: '#000',
+                                text: 'in'
+                            },
+                            '.port-body': {
+                                fill: '#16A085',
+                                stroke: '#000',
+                                r: 10,
+                                magnet: true
+                            }
+                        },
+                        label: {
+                            position: {
+                                name: 'right',
+                                args: {y: -10, x: -25} // extra arguments for the label layout function, see `layout.PortLabel` section
+                            }
+                        }
+                    },
+                    'out': {
+                        position: 'bottom',
+                        attrs: {
+                            '.port-label': {
+                                fill: '#000',
+                                text: 'out'
+                            },
+                            '.port-body': {
+                                fill: '#E74C3C',
+                                stroke: '#000',
+                                r: 10,
+                                magnet: true
+                            },
+                        },
+                        label: {
+                            position: {
+                                name: 'right',
+                                args: {y: +10, x: -35} // extra arguments for the label layout function, see `layout.PortLabel` section
+                            }
+                        }
+                    },
+                    'loop-end': {
+                        position: 'left',
+                        attrs: {
+                            '.port-label': {
+                                fill: '#000',
+                                text: 'loop-end'
+                            },
+                            '.port-body': {
+                                fill: '#16A085',
+                                stroke: '#000',
+                                r: 10,
+                                magnet: true
+                            }
+                        },
+                        label: {
+                            position: {
+                                name: 'right',
+                                args: {y: -20, x: -60} // extra arguments for the label layout function, see `layout.PortLabel` section
+                            }
+                        }
+                    },
+                    'loop-start': {
+                        position: 'left',
+                        attrs: {
+                            '.port-label': {
+                                fill: '#000',
+                                text: 'loop-start'
+                            },
+                            '.port-body': {
+                                fill: '#E74C3C',
+                                stroke: '#000',
+                                r: 10,
+                                magnet: true
+                            },
+                        },
+                        label: {
+                            position: {
+                                name: 'right',
+                                args: {y: +20, x: -60} // extra arguments for the label layout function, see `layout.PortLabel` section
+                            }
+                        }
+                    }
+                },
+                items: [
+                    // initialize port in group 'in'
+                    {
+                        name: 'loop-end',
+                        group: 'loop-end',
+                        args: { dy: +70 } // overrides `args` from the group level definition.
+                    },
+                    {
+                        name: 'in',
+                        group: 'in',
+                        args: {} // overrides `args` from the group level definition.
+                    },
+                    {
+                        name: 'loop-start',
+                        group: 'loop-start',
+                        args: { dy: -70} // overrides `args` from the group level definition.
+                    },
+                    {
+                        name: 'out',
+                        group: 'out',
+                        args: {} // overrides `args` from the group level definition.
+                    }
+                    // ... other ports
+                ]
+            },
+            attrs: {
+                // This is size and other properties of rect which is under the HTML
+                rect: {
+                    width: 200,
+                    height: actual_cell_height
+                }
+            },
+            label: 'for',
+        });
+    }
+
+    function createOtherCommandCell(actual_cell_height, command_name){
+        return new joint.shapes.html.Element({
+            position: {x: 20, y: 20},
+
+            // This is size of overlapping HTML element
+            size: {
+                width: 200,
+                height: actual_cell_height
+            },
+            ports: {
+                groups: {
+                    'in': {
+                        position: 'top',
+                        attrs: {
+                            '.port-label': {
+                                fill: '#000',
+                                text: 'in'
+                            },
+                            '.port-body': {
+                                fill: '#16A085',
+                                stroke: '#000',
+                                r: 10,
+                                magnet: true
+                            }
+                        },
+                        label: {
+                            position: {
+                                name: 'right',
+                                args: {y: -10} // extra arguments for the label layout function, see `layout.PortLabel` section
+                            }
+                        }
+                    },
+                    'out': {
+                        position: 'bottom',
+                        attrs: {
+                            '.port-label': {
+                                fill: '#000',
+                                text: 'out'
+                            },
+                            '.port-body': {
+                                fill: '#E74C3C',
+                                stroke: '#000',
+                                r: 10,
+                                magnet: true
+                            },
+                        },
+                        label: {
+                            position: {
+                                name: 'right',
+                                args: {y: +10} // extra arguments for the label layout function, see `layout.PortLabel` section
+                            }
+                        }
+                    }
+                },
+                items: [
+                    // initialize port in group 'in'
+                    {
+                        name: 'in',
+                        group: 'in',
+                        args: {} // overrides `args` from the group level definition.
+                    },
+                    {
+                        name: 'out',
+                        group: 'out',
+                        args: {} // overrides `args` from the group level definition.
+                    }
+                    // ... other ports
+                ]
+            },
+
+            attrs: {
+                // This is size and other properties of rect which is under the HTML
+                rect: {
+                    width: 200,
+                    height: actual_cell_height
+                }
+            },
+            label: command_name,
+        });
+
+    }
+
+    /**###############################################################*/
     /** Script building helpers */
+    /**###############################################################*/
 
     function buildOtherCommandScript(input) {
 
@@ -1871,7 +1875,6 @@ use yii\bootstrap\ActiveForm;
             }
         }
     }
-
 
 </script>
 
