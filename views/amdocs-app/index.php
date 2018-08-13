@@ -414,7 +414,7 @@ use yii\bootstrap\ActiveForm;
 
         function addElementToGraph(event) {
 
-            // Firstly, achieve the transferred command parameters.
+            // Firstly, achieve the transferred from library element command parameters.
             // -------------------------------------------------------------------------
 
             let command_id = event.dataTransfer.getData("command_id");
@@ -429,7 +429,7 @@ use yii\bootstrap\ActiveForm;
             // -------------------------------------------------------------------------
 
             let flags_str_arr = [];
-            if (!(command_flags.localeCompare('') == 0)) {
+            if (!(command_flags.localeCompare('') === 0)) {
 
                 // Parse parameters. Divided with '$'.
                 let arr = command_flags.split("$");
@@ -443,7 +443,7 @@ use yii\bootstrap\ActiveForm;
 
             let parameters_str_arr = [];
             let splitted_params = [];
-            if (!(command_parameters.localeCompare('') == 0)) {
+            if (!(command_parameters.localeCompare('') === 0)) {
 
                 // Parse parameters. Divided with '$'.
                 splitted_params = command_parameters.split("$");
@@ -532,7 +532,6 @@ use yii\bootstrap\ActiveForm;
             }, []);
 
             // Do inherit from base html element to create our custom.
-            // joint.shapes.html = {};
             joint.shapes.html.Element = joint.shapes.basic.Rect.extend({
                 defaults: joint.util.deepSupplement({
                     markup: '<g class="rotatable"><rect class="body"/><text class="label"/></g>',
@@ -570,7 +569,7 @@ use yii\bootstrap\ActiveForm;
             // -----------------------------------------------------------
 
             if (command_name.localeCompare('if') === 0) {
-                let if_element = createIfCell(actual_cell_height);
+                let if_element = createIfCell(actual_cell_height-50);
                 if_element.addTo(graph);
             }
             else if (command_name.localeCompare('for') === 0) {
@@ -750,11 +749,26 @@ use yii\bootstrap\ActiveForm;
             let script = "";
 
             let code = current_cell.attributes.input_command_code;
+
             if (code.localeCompare("if") === 0) {
                 script = buildIfCommandScript();
             }
             else if (code.localeCompare("for") === 0) {
 
+            }
+            else if (code.localeCompare("assignment") === 0) {
+                let assignment_res = assignVariableFromCommand();
+
+                if(assignment_res) {
+                    /** There is no need for res so it is empty string. */
+                    moveToNextCommand("");
+                }
+                else {
+                    log("Warning: Next execution will continue from start cell");
+                    current_cell = start_cell;
+                    log("");
+                }
+                return false;
             }
             else {
                 script = buildOtherCommandScript(input);
@@ -953,7 +967,6 @@ use yii\bootstrap\ActiveForm;
                 }
             }
 
-
             // Prevent paper from handling pointerdown.
             this.$box.find('input,select').on('mousedown click', function (evt) {
                 evt.stopPropagation();
@@ -970,7 +983,10 @@ use yii\bootstrap\ActiveForm;
                 // First one is always input variable and last one is output variable.
                 // But not in case we dealing with 'for' or 'if'
 
-                if (this.model.get('input_command_code').localeCompare('for') === 0) {
+                if (this.model.get('input_command_code').localeCompare('for') === 0 ||
+
+                    this.model.get('input_command_code').localeCompare('assignment') === 0) {
+
                     let input_params = user_inputs_array.reduce(function (acc, input, i) {
                         if (input.type.localeCompare('text') === 0) {
                             acc[input.name] = input.value;
@@ -1600,6 +1616,25 @@ use yii\bootstrap\ActiveForm;
     /** Script building helpers */
     /**###############################################################*/
 
+    function assignVariableFromCommand() {
+        let params = current_cell.attributes.input_params;
+        let variable = params["variable"];
+        let value = params["value"];
+        let splitted_variable = variable.split("$");
+        if(splitted_variable.length === 1 ||
+            splitted_variable[0].localeCompare("") !== 0 ||
+            splitted_variable[1].localeCompare("") === 0) {
+
+            log("Error: variable name must start with \"$\" and cannot be empty.");
+            return false;
+        }
+        else {
+            user_variables[splitted_variable[1]] = value;
+            log("Executed command: assignment, variable assigned: " + variable + " = \"" + value + "\"");
+            return true;
+        }
+    }
+
     function buildOtherCommandScript(input) {
 
         /** Other commands are executed on shell.
@@ -1622,10 +1657,10 @@ use yii\bootstrap\ActiveForm;
 
         // Compose the command string
         let current_command_string = code;
-        if (flags.localeCompare("") != 0) {
+        if (flags.localeCompare("") !== 0) {
             current_command_string += (" " + flags);
         }
-        if (params.localeCompare("") != 0) {
+        if (params.localeCompare("") !== 0) {
             current_command_string += (" " + params);
         }
 
@@ -1826,7 +1861,7 @@ use yii\bootstrap\ActiveForm;
     function composeParams(cell) {
         let params = "";
         let i = 0;
-        for (param in cell.attributes.input_params) {
+        for (let param in cell.attributes.input_params) {
             let keys = Object.keys(cell.attributes.input_params);
             if (i === keys.length - 1) {
                 params += (cell.attributes.input_params[param]);
