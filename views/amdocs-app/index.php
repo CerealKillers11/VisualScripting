@@ -527,7 +527,7 @@ use yii\bootstrap\ActiveForm;
 
             // Do inherit from base html element to create our custom.
             // joint.shapes.html = {};
-            joint.shapes.html.Element = joint.shapes.devs.Model.extend({
+            joint.shapes.html.Element = joint.shapes.basic.Rect.extend({
                 defaults: joint.util.deepSupplement({
                     type: 'html.Element',
                     attrs: {
@@ -541,7 +541,7 @@ use yii\bootstrap\ActiveForm;
                     input_params: default_params,
                     input_flags: [],
 
-                }, joint.shapes.devs.Model.prototype.defaults),
+                }, joint.shapes.basic.Rect.prototype.defaults),
 
             });
 
@@ -556,37 +556,104 @@ use yii\bootstrap\ActiveForm;
 
             if (command_name.localeCompare('if') == 0) {
                 let if_element = new joint.shapes.html.Element({
+                    markup: '<g class="rotatable"><rect class="body"/><text class="label"/></g>',
+                    portMarkup: '<circle class="port-body"/>',
+                    portLabelMarkup: '<text class="port-label"/>',
+
                     position: {x: 20, y: 20},
                     size: {
-                        width: 190,
-                        height: 20 + additionalHeight
+                        width: 200,
+                        height: additionalHeight
                     },
-                    inPorts: ['in'],
-                    outPorts: ['out(true)', 'out(false)'],
                     ports: {
                         groups: {
                             'in': {
                                 position: 'top',
                                 attrs: {
+                                    '.port-label': {
+                                        fill: '#000',
+                                        text: 'in'
+                                    },
                                     '.port-body': {
-                                        fill: '#16A085'
+                                        fill: '#16A085',
+                                        stroke: '#000',
+                                        r: 10,
+                                        magnet: true
                                     }
                                 },
                                 label: {
                                     position: {
                                         name: 'right',
-                                        args: {y: -10} // extra arguments for the label layout function, see `layout.PortLabel` section
+                                        args: {y: -10, x: -25} // extra arguments for the label layout function, see `layout.PortLabel` section
                                     }
                                 }
                             },
-                            'out': {
+                            'out(true)': {
                                 position: 'bottom',
                                 attrs: {
+                                    '.port-label': {
+                                        fill: '#000',
+                                        text: 'out(true)'
+                                    },
                                     '.port-body': {
-                                        fill: '#E74C3C'
+                                        fill: '#E74C3C',
+                                        stroke: '#000',
+                                        r: 10,
+                                        magnet: true
+                                    },
+                                },
+                                label: {
+                                    position: {
+                                        name: 'right',
+                                        args: {y: +15, x: -65} // extra arguments for the label layout function, see `layout.PortLabel` section
+                                    }
+                                }
+                            },
+                            'out(false)': {
+                                position: 'bottom',
+                                attrs: {
+                                    '.port-label': {
+                                        fill: '#000',
+                                        text: 'out(false)'
+                                    },
+                                    '.port-body': {
+                                        fill: '#E74C3C',
+                                        stroke: '#000',
+                                        r: 10,
+                                        magnet: true
+                                    },
+                                },
+                                label: {
+                                    position: {
+                                        name: 'right',
+                                        args: {y: +15, x: +10} // extra arguments for the label layout function, see `layout.PortLabel` section
                                     }
                                 }
                             }
+                        },
+                        items: [
+                            {
+                                name: 'in',
+                                group: 'in',
+                                args: {} // overrides `args` from the group level definition.
+                            },
+                            {
+                                name: 'out(true)',
+                                group: 'out(true)',
+                                args: {dx: -60} // overrides `args` from the group level definition.
+                            },
+                            {
+                                name: 'out(false)',
+                                group: 'out(false)',
+                                args: {dx: +60} // overrides `args` from the group level definition.
+                            }
+                        ]
+                    },
+                    attrs: {
+                        // This is size and other properties of rect which is under the HTML
+                        rect: {
+                            width: 200,
+                            height: additionalHeight
                         }
                     },
                     label: event.dataTransfer.getData("command_name"),
@@ -596,37 +663,92 @@ use yii\bootstrap\ActiveForm;
             }
             else if (command_name.localeCompare('for') == 0) {
                 let for_element = new joint.shapes.html.Element({
+                    markup: '<g class="rotatable"><rect class="body"/><text class="label"/></g>',
+                    portMarkup: '<circle class="port-body"/>',
+                    portLabelMarkup: '<text class="port-label"/>',
+
                     position: {x: 20, y: 20},
                     size: {
-                        width: 190,
+                        width: 200,
                         height: 90
                     },
-                    inPorts: ['in'],
-                    outPorts: ['loop', 'continue'],
                     ports: {
                         groups: {
                             'in': {
                                 position: 'top',
                                 attrs: {
+                                    '.port-label': {
+                                        fill: '#000',
+                                        text: 'in'
+                                    },
                                     '.port-body': {
-                                        fill: '#16A085'
+                                        fill: '#16A085',
+                                        stroke: '#000',
+                                        r: 10,
+                                        magnet: true
                                     }
                                 },
                                 label: {
                                     position: {
                                         name: 'right',
-                                        args: {y: -10} // extra arguments for the label layout function, see `layout.PortLabel` section
+                                        args: {y: -10, x: -25} // extra arguments for the label layout function, see `layout.PortLabel` section
                                     }
                                 }
                             },
                             'out': {
                                 position: 'bottom',
                                 attrs: {
+                                    '.port-label': {
+                                        fill: '#000',
+                                        text: 'out'
+                                    },
                                     '.port-body': {
-                                        fill: '#E74C3C'
+                                        fill: '#E74C3C',
+                                        stroke: '#000',
+                                        r: 10,
+                                        magnet: true
+                                    },
+                                },
+                                label: {
+                                    position: {
+                                        name: 'right',
+                                        args: {y: +10, x: -35} // extra arguments for the label layout function, see `layout.PortLabel` section
                                     }
                                 }
                             }
+                        },
+                        items: [
+                            // initialize port in group 'in'
+                            {
+                                name: 'flow end',
+                                group: 'in',
+                                args: { dx: -50, dy: +70 } // overrides `args` from the group level definition.
+                            },
+                            {
+                                name: 'in',
+                                group: 'in',
+                                args: {} // overrides `args` from the group level definition.
+                            },
+                            {
+                                name: 'flow start',
+                                group: 'out',
+                                args: { dx: -50, dy: -70} // overrides `args` from the group level definition.
+                            },
+                            {
+                                name: 'out',
+                                group: 'out',
+                                args: {} // overrides `args` from the group level definition.
+                            }
+                            // ... other ports
+                        ]
+                    },
+                    attrs: {
+                        // This is size and other properties of rect which is under the HTML
+                        rect: {
+                            stroke: 'none',
+                            'fill-opacity': 0,
+                            width: 200,
+                            height: 70 + additionalHeight
                         }
                     },
                     label: event.dataTransfer.getData("command_name"),
@@ -636,20 +758,30 @@ use yii\bootstrap\ActiveForm;
             }
             else {
                 let command_element = new joint.shapes.html.Element({
+                    markup: '<g class="rotatable"><rect class="body"/><text class="label"/></g>',
+                    portMarkup: '<circle class="port-body"/>',
+                    portLabelMarkup: '<text class="port-label"/>',
                     position: {x: 20, y: 20},
+
+                    // This is size of overlapping HTML element
                     size: {
-                        width: 190,
+                        width: 200,
                         height: 70 + additionalHeight
                     },
-                    inPorts: ['in'],
-                    outPorts: ['out'],
                     ports: {
                         groups: {
                             'in': {
                                 position: 'top',
                                 attrs: {
+                                    '.port-label': {
+                                        fill: '#000',
+                                        text: 'in'
+                                    },
                                     '.port-body': {
-                                        fill: '#16A085'
+                                        fill: '#16A085',
+                                        stroke: '#000',
+                                        r: 10,
+                                        magnet: true
                                     }
                                 },
                                 label: {
@@ -662,15 +794,106 @@ use yii\bootstrap\ActiveForm;
                             'out': {
                                 position: 'bottom',
                                 attrs: {
+                                    '.port-label': {
+                                        fill: '#000',
+                                        text: 'out'
+                                    },
                                     '.port-body': {
-                                        fill: '#E74C3C'
+                                        fill: '#E74C3C',
+                                        stroke: '#000',
+                                        r: 10,
+                                        magnet: true
+                                    },
+                                },
+                                label: {
+                                    position: {
+                                        name: 'right',
+                                        args: {y: +10} // extra arguments for the label layout function, see `layout.PortLabel` section
                                     }
                                 }
                             }
+                        },
+                        items: [
+                            // initialize port in group 'in'
+                            {
+                                name: 'in',
+                                group: 'in',
+                                args: {} // overrides `args` from the group level definition.
+                            },
+                            {
+                                name: 'out',
+                                group: 'out',
+                                args: {} // overrides `args` from the group level definition.
+                            }
+                            // ... other ports
+                        ]
+                    },
+
+                    attrs: {
+                        // This is size and other properties of rect which is under the HTML
+                        rect: {
+                            stroke: 'none',
+                            'fill-opacity': 0,
+                            width: 200,
+                            height: 70 + additionalHeight
                         }
                     },
                     label: event.dataTransfer.getData("command_name"),
                 });
+
+
+                /** joint.shapes.basic.Rect({
+            markup: '<g class="rotatable"><rect class="body"/><text class="label"/></g>',
+            portMarkup: '<circle class="port-body"/>',
+            portLabelMarkup: '<text class="port-label"/>',
+            size: {
+                width: 90,
+                height: 30
+            },
+            ports: {
+                groups: {
+                    'out': {
+                        position: 'bottom',
+                        attrs: {
+                            '.port-label': {
+                                fill: '#000',
+                                text: 'out'
+                            },
+                            '.port-body': {
+                                fill: '#E74C3C',
+                                stroke: '#000',
+                                r: 10,
+                                magnet: true
+                            },
+                        },
+                        label: {
+                            position: {
+                                name: 'right',
+                                args: {y: +10} // extra arguments for the label layout function, see `layout.PortLabel` section
+                            }
+                        },
+                    }
+                },
+                items: [
+                    // initialize port in group 'in'
+                    {
+                        name: 'out',
+                        group: 'out',
+                        args: {} // overrides `args` from the group level definition.
+                    }
+                    // ... other ports
+                ]
+            },
+            attrs: {
+                '.label': {text: 'Start', fill: 'black', 'ref-y': 10},
+                rect: {
+                    fill: 'orange',
+                    width: 90,
+                    height: 30
+                }
+            }
+        });*/
+
                 command_element.addTo(graph);
             }
         }
@@ -977,7 +1200,7 @@ use yii\bootstrap\ActiveForm;
     joint.shapes.html = {};
 
     /** A dummy, empty implementation of html element. */
-    joint.shapes.html.Element = joint.shapes.devs.Model.extend({
+    joint.shapes.html.Element = joint.shapes.basic.Rect.extend({
         defaults: joint.util.deepSupplement({
             type: 'html.Element',
             attrs: {
@@ -991,9 +1214,15 @@ use yii\bootstrap\ActiveForm;
             input_params: {},
             input_flags: [],
 
-        }, joint.shapes.devs.Model.prototype.defaults),
+        }, joint.shapes.basic.Rect.prototype.defaults),
 
     });
+
+
+
+
+
+
 
     /** A real view of html element, model is not depend on it. */
     joint.shapes.html.ElementView = joint.dia.ElementView.extend({
