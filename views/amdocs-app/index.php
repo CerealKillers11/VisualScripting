@@ -758,6 +758,9 @@ use yii\bootstrap\ActiveForm;
             /** Constructing the current command's script. */
             let script = "";
 
+            /** Interesting for shell scripts only */
+            let execution_path = document.getElementById('execution_path').value;
+
             let code = current_cell.attributes.input_command_code;
 
             if (code.localeCompare("if") === 0) {
@@ -783,12 +786,15 @@ use yii\bootstrap\ActiveForm;
                 }
                 return false;
             }
+            else if(code.localeCompare("free equation") === 0) {
+                script = "cd "+ execution_path + "\n" +
+                    current_cell.attributes.input_params["equation"];
+            }
             else {
-                script = buildOtherCommandScript(input_var_or_string);
+                script = buildOtherCommandScript(input_var_or_string, execution_path);
             }
 
             /** Sending the script to a server via AJAX */
-
             $.ajax({
                 url: 'index.php?r=amdocs-app%2Fexecute',
                 type: 'POST',
@@ -1716,14 +1722,17 @@ use yii\bootstrap\ActiveForm;
     }
 
 
-    function buildOtherCommandScript(input) {
+    function buildOtherCommandScript(input, execution_path) {
 
         /** Other commands are executed on shell.
          * The problem was that the input can contain quotations.
          * This can be solved representing input as array. */
 
-            // Bash script preamble
+        // Bash script preamble
         let script = "#!/bin/bash" + "\n" + "\n";
+
+        //Change execution path to desired by user
+        script +="cd "+ execution_path + "\n";
 
         // Prepare code of a command
         let code = current_cell.attributes.input_command_code;
@@ -2185,8 +2194,8 @@ use yii\bootstrap\ActiveForm;
 
                         if(target_id.localeCompare(first_neighbor_id) === 0) {
                             if (finish_cell === out_neighbors[0]) {
-                                log("Error: finish cell inside a loop, check your flow!");
-                                log("Warning: execution will continue from start cell");
+                                log("Finish cell reached during execution! Execution finished!");
+                                log("Tip: Execution can be continued from start cell");
                                 resetExecution();
                                 return;
                             }
@@ -2198,8 +2207,8 @@ use yii\bootstrap\ActiveForm;
                         else
                         {
                             if (finish_cell === out_neighbors[1]) {
-                                log("Error: finish cell inside a loop, check your flow!");
-                                log("Warning: execution will continue from start cell");
+                                log("Finish cell reached during execution! Execution finished!");
+                                log("Tip: Execution can be continued from start cell");
                                 resetExecution();
                                 return;
                             }

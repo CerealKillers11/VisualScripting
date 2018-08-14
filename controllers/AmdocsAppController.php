@@ -108,7 +108,11 @@ class AmdocsAppController extends \yii\web\Controller
             }
             else {
                 file_put_contents('command.sh',$command_script);
+
                 $output = shell_exec('./command.sh');
+
+                unlink('command.sh');
+                
                 if($output == null) return '';
                 return $output;
             }
