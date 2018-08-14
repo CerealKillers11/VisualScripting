@@ -94,7 +94,17 @@ class AmdocsAppController extends \yii\web\Controller
                 {
                     return "true";
                 }
-                return "false";
+                else if( $output == 0) {
+                    return "false";
+                }
+                else{
+                    return $output;
+                }
+            }
+            else if($code == 'action') {
+                $replaced_script = str_replace("#","&",$command_script);
+                $output = eval($replaced_script);
+                return $output;
             }
             else {
                 file_put_contents('command.sh',$command_script);

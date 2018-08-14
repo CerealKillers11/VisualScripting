@@ -543,12 +543,22 @@ use yii\bootstrap\ActiveForm;
                         rect: {stroke: 'none', 'fill-opacity': 0}
                     },
                     template: template_str,
+
+                    /** Our special variables needed
+                     * for execution of commands. */
                     command_description: command_description,
                     input_command_code: command_code,
                     input_var_in: '',
                     input_var_out: '',
                     input_params: default_params,
                     input_flags: [],
+
+                    /** Special for for-loop
+                     * execution status.
+                     * Need to know in advance
+                     * if we entered to for-loop cell
+                     * first time or not.*/
+                    entered_first_time: true
 
                 }, joint.shapes.basic.Rect.prototype.defaults),
 
@@ -687,7 +697,7 @@ use yii\bootstrap\ActiveForm;
         finish_cell.position(350, 400);
         graph.addCell(finish_cell);
 
-        current_cell = start_cell;
+        resetExecution();
 
         log("Flow was cleared.")
     });
@@ -730,19 +740,19 @@ use yii\bootstrap\ActiveForm;
             /** At first, taking input of current cell*/
             /** Input can be not only a variable, also some value. */
 
-            let input = "";
+            let input_var_or_string = "";
             let splitted_input = current_cell.attributes.input_var_in.split("$");
 
             if (splitted_input.length > 1 && splitted_input[0].localeCompare("") === 0) {
 
                 /** This is variable because starts from $ */
-                input = user_variables[splitted_input[1]];
+                input_var_or_string = user_variables[splitted_input[1]];
             }
             else {
 
                 /** This is just a some user value, not variable.
                  * User values must not contain dollars! */
-                input = splitted_input[0];
+                input_var_or_string = splitted_input[0];
             }
 
             /** Constructing the current command's script. */
@@ -751,27 +761,30 @@ use yii\bootstrap\ActiveForm;
             let code = current_cell.attributes.input_command_code;
 
             if (code.localeCompare("if") === 0) {
-                script = buildIfCommandScript();
+                // The only param of 'if' is a condition
+                let condition = composeParams(current_cell);
+                script = buildConditionEvalScript(condition);
             }
             else if (code.localeCompare("for") === 0) {
-
+                executeForLoopCell();
+                return false;
             }
             else if (code.localeCompare("assignment") === 0) {
-                let assignment_res = assignVariableFromCommand();
+                let assignment_res = executeAssignment();
 
                 if(assignment_res) {
                     /** There is no need for res so it is empty string. */
                     moveToNextCommand("");
                 }
                 else {
-                    log("Warning: Next execution will continue from start cell");
-                    current_cell = start_cell;
+                    log("Warning: execution will continue from start cell");
+                    resetExecution();
                     log("");
                 }
                 return false;
             }
             else {
-                script = buildOtherCommandScript(input);
+                script = buildOtherCommandScript(input_var_or_string);
             }
 
             /** Sending the script to a server via AJAX */
@@ -843,7 +856,10 @@ use yii\bootstrap\ActiveForm;
         }, joint.dia.Link.prototype.defaults),
     });
 
+
+
     var graph = new joint.dia.Graph();
+
 
     var paper = new joint.dia.Paper({
         el: $('#paper_holder'),
@@ -898,7 +914,7 @@ use yii\bootstrap\ActiveForm;
     /** Define a namespace for our html elements. */
     joint.shapes.html = {};
 
-    /** A dummy, empty implementation of html element. */
+    /** An empty implementation of html element. */
     joint.shapes.html.Element = joint.shapes.basic.Rect.extend({
         defaults: joint.util.deepSupplement({
             markup: '<g class="rotatable"><rect class="body"/><text class="label"/></g>',
@@ -910,12 +926,22 @@ use yii\bootstrap\ActiveForm;
                 rect: {stroke: 'none', 'fill-opacity': 0}
             },
             template: '',
+
+            /** Our special variables needed
+             * for execution of commands. */
             command_description: '',
             input_command_code: '',
             input_var_in: '',
             input_var_out: '',
             input_params: {},
             input_flags: [],
+
+            /** Special for for-loop
+             * execution status.
+             * Need to know in advance
+             * if we entered to for-loop cell
+             * first time or not.*/
+            entered_first_time: true
 
         }, joint.shapes.basic.Rect.prototype.defaults),
 
@@ -1613,10 +1639,10 @@ use yii\bootstrap\ActiveForm;
     }
 
     /**###############################################################*/
-    /** Script building helpers */
+    /** Script building and execution helpers */
     /**###############################################################*/
 
-    function assignVariableFromCommand() {
+    function executeAssignment() {
         let params = current_cell.attributes.input_params;
         let variable = params["variable"];
         let value = params["value"];
@@ -1634,6 +1660,61 @@ use yii\bootstrap\ActiveForm;
             return true;
         }
     }
+
+    function executeForLoopCell() {
+
+        /** The strategy to perform for-loop execution is:
+         * 1) Action(assignment,++, etc. is performed by PHP's eval().
+         * 2) Condition is checked also using PHP's eval(),
+         * like as in a case with 'if', just to do it easier.
+         * 3) I assume user don't going to change the varable name in code,
+         * but it will be checked too.
+         * 4) Pay attention that loop can be inclosed in another but
+         * this is not a problem, just need to do a correct decision
+         * what is the next cell to be executed. */
+
+        let params = current_cell.attributes.input_params;
+
+        /** When we enter not first time we must perform the action. */
+        if(!current_cell.attributes.entered_first_time) {
+
+            /** All next time we enter we will perform the action before checking condition. */
+            current_cell.attributes.entered_first_time = false;
+
+            let action = params["action"];
+            let action_to_eval = buildActionEvalScript(action);
+
+            $.ajax({
+                url: 'index.php?r=amdocs-app%2Fexecute',
+                type: 'POST',
+                data: 'script=' + action_to_eval + '&' + 'code=' + 'action', //POST-style
+                success: function (res) {
+
+                    /** Cut the possible \n at end of result */
+                    if (res.charAt(res.length - 1) === '\n') {
+                        res = res.slice(0, res.length - 1);
+                    }
+
+                    log("In a for-loop: performed action \"" + action + "\", result: " + res);
+
+                    /** Now we need to assign result of action to a variable. */
+                    updateVariableAfterAction(action,res);
+
+                    checkConditionAndMoveToNextInForLoop();
+
+                },
+                error: function () {
+                    alert('Internal server error while performing action of for-loop!');
+                }
+            });
+        }
+        else {
+            /** All next time we enter we will perform the action before checking condition. */
+            current_cell.attributes.entered_first_time = false;
+            checkConditionAndMoveToNextInForLoop();
+        }
+    }
+
 
     function buildOtherCommandScript(input) {
 
@@ -1688,54 +1769,14 @@ use yii\bootstrap\ActiveForm;
         return script;
     }
 
-    function buildIfCommandScript() {
+    function buildConditionEvalScript(condition) {
 
         /** Decision is made with PHP's eval() on a server side.
          * Condition can be written as comparison,
          * including logical operators.
          * Comparison is made for strings and variables.*/
 
-            // The only param of 'if' is a condition
-        let condition = composeParams(current_cell);
-
-        let regex = /([()=<>&| "])/;
-
-        /** Need to prepare variables.*/
-        let splitted_condition = condition.split(regex);
-
-        let vars_from_condition = [];
-
-        for (i = 0; i < splitted_condition.length; i++) {
-            if (splitted_condition[i].startsWith("$") && !vars_from_condition.includes(splitted_condition[i], 0)) {
-                vars_from_condition.push(splitted_condition[i]);
-            }
-        }
-
-        /** These variables are with '$' at start - need to cut */
-        for (i = 0; i < vars_from_condition.length; i++) {
-            vars_from_condition[i] = vars_from_condition[i].replace("$", "");
-        }
-
-        /** If one of condition's variables is not defined yet,
-         * add it automatically as empty string, but log a warning.*/
-        for (i = 0; i < vars_from_condition.length; i++) {
-            if (!Object.keys(user_variables).includes(vars_from_condition[i])) {
-                user_variables[vars_from_condition[i]] = "";
-                log("Warning: variable $" + vars_from_condition[i] + " was not defined before.");
-                log("Warning: auto-assigning variable $" + vars_from_condition[i] + " to \"\".");
-            }
-        }
-
-        /** Prepare a string with definition of variables */
-        let string_to_eval = "";
-        for (i = 0; i < vars_from_condition.length; i++) {
-            for (let v in user_variables) {
-                if (v.localeCompare(vars_from_condition[i]) === 0) {
-                    string_to_eval += "$" + v + " = " + "\"" + user_variables[v] + "\"" + ";\n"
-                }
-            }
-        }
-
+        let string_to_eval = buildStringWithDefinitionOfPHPVariables(condition);
         string_to_eval += "return (" + condition + ");";
 
         /** Here the issue is that post-type request uses '&' char.
@@ -1745,6 +1786,151 @@ use yii\bootstrap\ActiveForm;
 
         return string_to_eval;
     }
+
+    function buildActionEvalScript(action) {
+
+        /** Action is performed with PHP's eval() on a server side.*/
+
+        let string_to_eval = buildStringWithDefinitionOfPHPVariables(action);
+
+        /** We assume that lvalue of action is a variable to be changed. */
+
+        /** We need to achieve lvalue of an action. */
+
+        let regex = /([()=<>&| "])/;
+
+        let splitted_action = action.split(regex);
+
+        let lvalue = "";
+
+        for (let i = 0; i < splitted_action.length; i++) {
+            if (splitted_action[i].startsWith("$")) {
+                lvalue = splitted_action[i];
+            }
+        }
+
+        string_to_eval +=  action + ";" + "return " + lvalue + ";";
+
+        /** Here the issue is that post-type request uses '&' char.
+         * Replace the '&' with '#' in script to sent via post. */
+
+        string_to_eval = string_to_eval.replace("&&", "##");
+
+        return string_to_eval;
+
+    }
+
+    function buildStringWithDefinitionOfPHPVariables(php_code) {
+
+        let regex = /([()=<>&| "])/;
+
+        /** Need to prepare variables.*/
+        let splitted_condition = php_code.split(regex);
+
+        let vars_from_condition = [];
+
+        for (let i = 0; i < splitted_condition.length; i++) {
+            if (splitted_condition[i].startsWith("$") && !vars_from_condition.includes(splitted_condition[i], 0)) {
+                vars_from_condition.push(splitted_condition[i]);
+            }
+        }
+
+        /** These variables are with '$' at start - need to cut */
+        for (let i = 0; i < vars_from_condition.length; i++) {
+            vars_from_condition[i] = vars_from_condition[i].replace("$", "");
+        }
+
+        /** If one of condition's variables is not defined yet,
+         * add it automatically as empty string, but log a warning.*/
+        for (let i = 0; i < vars_from_condition.length; i++) {
+            if (!Object.keys(user_variables).includes(vars_from_condition[i])) {
+                user_variables[vars_from_condition[i]] = "";
+                log("Warning: variable $" + vars_from_condition[i] + " was not defined before.");
+                log("Warning: auto-assigning variable $" + vars_from_condition[i] + " to \"\".");
+            }
+        }
+
+        /** Prepare a string with definition of variables */
+        let string_to_eval = "";
+        for (let i = 0; i < vars_from_condition.length; i++) {
+            for (let v in user_variables) {
+                if (v.localeCompare(vars_from_condition[i]) === 0) {
+                    string_to_eval += "$" + v + " = "  + user_variables[v] + ";\n"
+                    //Quotes may cause problems
+                    // string_to_eval += "$" + v + " = " + "\"" + user_variables[v] + "\"" + ";\n"
+
+                }
+            }
+        }
+
+        return string_to_eval;
+    }
+
+
+
+    function updateVariableAfterAction(action,res) {
+        let regex = /([()=<>&| "])/;
+
+        let splitted_action = action.split(regex);
+
+        let variable_to_assign = "";
+
+        for (let i = 0; i < splitted_action.length; i++) {
+            if (splitted_action[i].startsWith("$")) {
+                variable_to_assign = splitted_action[i];
+            }
+        }
+
+        let splitted_variable = variable_to_assign.split("$");
+        if(splitted_variable.length === 1 ||
+            splitted_variable[0].localeCompare("") !== 0 ||
+            splitted_variable[1].localeCompare("") === 0) {
+
+            log("Error: variable name must start with \"$\" and cannot be empty.");
+            log('Error: unable to perform action in for-loop"')
+        }
+        else {
+            user_variables[splitted_variable[1]] = res;
+            log("In a for-loop: performed action, variable assigned: " +
+                variable_to_assign +
+                " = \"" + res + "\"");
+            log();
+        }
+    }
+
+    function checkConditionAndMoveToNextInForLoop() {
+
+        /** Now, let's check the condition.*/
+        let params = current_cell.attributes.input_params;
+
+        let condition = params["condition"];
+        let condition_to_eval = buildConditionEvalScript(condition);
+
+        $.ajax({
+            url: 'index.php?r=amdocs-app%2Fexecute',
+            type: 'POST',
+            data: 'script=' + condition_to_eval + '&' + 'code=' + 'if', //POST-style
+            success: function (res) {
+
+                /** Cut the possible \n at end of result */
+                if (res.charAt(res.length - 1) === '\n') {
+                    res = res.slice(0, res.length - 1);
+                }
+
+                log("In a for-loop: checked condition \"" + condition + "\", result: " + res);
+
+                /** res is "true" or "false".
+                 *  And this is the work for
+                 *  "moveToNextCommand".*/
+                moveToNextCommand(res);
+            },
+            error: function () {
+                alert('Internal server error while checking condition of for-loop!');
+            }
+        });
+    }
+
+
 
     function assignVariableFromOutput(res) {
         let var_out = current_cell.attributes.input_var_out;
@@ -1773,74 +1959,294 @@ use yii\bootstrap\ActiveForm;
     function moveToNextCommand(res) {
         /** Move to the next command.
          * In case of loop and if we need to make decisions based on ports.*/
-        let out_neighbors = graph.getNeighbors(current_cell, {outbound: true});
 
+        let out_neighbors = graph.getNeighbors(current_cell, {outbound: true});
         console.log("");
 
-        let code = current_cell.attributes.input_command_code;
-
         if (out_neighbors.length === 0) {
-            // A case when flow does not connected to finish cell
             log("Warning: unexpected end of flow - not connected to finish cell!");
-            log("Warning: Next execution will continue from start cell");
-            current_cell = start_cell;
+            log("Warning: execution will continue from start cell");
+            resetExecution();
         }
-        else if (out_neighbors.length === 1) {
+        else {
+            let code = current_cell.attributes.input_command_code;
 
+            if(code.localeCompare("for") === 0) {
+                moveToNextCommandFromForCell(res,out_neighbors);
+            }
+            else if(code.localeCompare("if") === 0) {
+                moveToNextCommandFromIfCell(res,out_neighbors);
+            }
+            else {
+                moveToNextCommandFromOtherCell(res,out_neighbors);
+            }
+        }
+        /** Print an empty string between the executions of commands*/
+        log();
+    }
+
+    function moveToNextCommandFromIfCell(res,out_neighbors) {
+        if (out_neighbors.length === 1) {
+
+            /** It may be 'if' with only one connected port! */
+            let links = graph.getConnectedLinks(current_cell, {outbound: true});
+
+            if (links.length < 2) {
+                /** It is 'if' with only one connected port! */
+                log("Error: one of ports of 'if' command is not connected!");
+                log("Warning: execution will continue from start cell");
+                resetExecution();
+            }
+            else {
+                /** Two links to a same cell - is ok*/
+
+                /** Successor can be a finish cell*/
+                if (finish_cell === out_neighbors[0]) {
+                    log("Finish cell reached during execution! Execution finished!");
+                    log("Tip: Execution can be continued from start cell");
+                    resetExecution();
+                }
+                else {
+                    /** Move to a next cell*/
+                    current_cell = out_neighbors[0];
+                }
+            }
+        }
+        else if (out_neighbors.length === 2) {
+            /** Case of two links to two cells.*/
+            let links = graph.getConnectedLinks(current_cell, {outbound: true});
+
+            for(let i=0; i<links.length; i++) {
+                let port_id = links[i].attributes.source.port;
+                let port = current_cell.getPort(port_id);
+                let port_name = port.name;
+                if(port_name.localeCompare('out(true)') === 0 && res.localeCompare("true") === 0){
+                    let target_id = links[i].attributes.target.id;
+                    let first_neighbor_id = out_neighbors[0].attributes.id;
+                    if(target_id.localeCompare(first_neighbor_id) === 0) {
+                        if (finish_cell === out_neighbors[0]) {
+                            log("Finish cell reached during execution! Execution finished!");
+                            log("Tip: Execution can be continued from start cell");
+                            resetExecution();
+                            return;
+
+                        }
+                        else {
+                            current_cell = out_neighbors[0];
+                            return;
+                        }
+                    }
+                    else {
+                        if (finish_cell === out_neighbors[1]) {
+                            log("Finish cell reached during execution! Execution finished!");
+                            log("Tip: Execution can be continued from start cell");
+                            resetExecution();
+                            return;
+                        }
+                        else {
+                            current_cell = out_neighbors[1];
+                            return;
+
+                        }
+                    }
+                }
+                else if (port_name.localeCompare('out(false)') === 0 && res.localeCompare("false") === 0){
+                    let target_id = links[i].attributes.target.id;
+                    let first_neighbor_id = out_neighbors[0].attributes.id;
+                    if(target_id.localeCompare(first_neighbor_id) === 0) {
+                        if (finish_cell === out_neighbors[0]) {
+                            log("Finish cell reached during execution! Execution finished!");
+                            log("Tip: Execution can be continued from start cell");
+                            resetExecution();
+                            return;
+
+                        }
+                        else {
+                            current_cell = out_neighbors[0];
+                            return;
+                        }
+                    }
+                    else {
+                        if (finish_cell === out_neighbors[1]) {
+                            log("Finish cell reached during execution! Execution finished!");
+                            log("Tip: Execution can be continued from start cell");
+                            resetExecution();
+                            return;
+                        }
+                        else {
+                            current_cell = out_neighbors[1];
+                            return;
+
+                        }
+                    }
+                }
+            }
+        }
+        else {
+            /** No case where more than two outbound links can be*/
+            log("Error: too much outbound links for command \"if\"!");
+            log("Warning: execution will continue from start cell");
+            resetExecution();
+        }
+    }
+
+    function moveToNextCommandFromForCell(res,out_neighbors) {
+
+        /** First of all, if res is false, the only way to go
+         * is an out port, and if res is true need to go inside a loop.*/
+
+        if(res.localeCompare("true") === 0) {
+            /** Need to enter a loop.*/
+            if(out_neighbors.length === 1) {
+                /** Here we have two cases.
+                 * 1) Loop is empty, out is connected.
+                 * 2) Out is not connected, and start of loop is connected.*/
+                log("Error: one of out ports of 'for' is not connected, check your flow!");
+                log("Warning: execution will continue from start cell");
+                resetExecution();
+            }
+            else if(out_neighbors.length === 2) {
+                /** Two ports are connected, need to get decision using ports and links,
+                 * e.g continue to loop. */
+
+                let links = graph.getConnectedLinks(current_cell, {outbound: true});
+
+                for(let i=0; i<links.length; i++) {
+                    let port_id = links[i].attributes.source.port;
+                    let port = current_cell.getPort(port_id);
+                    let port_name = port.name;
+                    if(port_name.localeCompare('loop-start') === 0){
+                        let target_id = links[i].attributes.target.id;
+                        let first_neighbor_id = out_neighbors[0].attributes.id;
+                        if(target_id.localeCompare(first_neighbor_id) === 0) {
+                            if (finish_cell === out_neighbors[0]) {
+                                log("Error: finish cell inside a loop, check your flow!");
+                                log("Warning: execution will continue from start cell");
+                                resetExecution();
+                                return;
+
+                            }
+                            else {
+                                current_cell = out_neighbors[0];
+                                return;
+
+                            }
+                        }
+                        else
+                        {
+                            if (finish_cell === out_neighbors[1]) {
+                                log("Error: finish cell inside a loop, check your flow!");
+                                log("Warning: execution will continue from start cell");
+                                resetExecution();
+                                return;
+
+                            }
+                            else {
+                                current_cell = out_neighbors[1];
+                                return;
+
+                            }
+                        }
+                    }
+                }
+            }
+            else {
+                /** No case where more than two outbound links can be*/
+                log("Error: too much outbound links for command \"for\"!");
+                log("Warning: execution will continue from start cell");
+                resetExecution();
+            }
+        }
+        else if(res.localeCompare("false") === 0) {
+            /** Need to go out.
+             * Do not forget to update flag entered_first_time
+             * from the model*/
+            current_cell.attributes.entered_first_time = true;
+
+            if(out_neighbors.length === 1) {
+                /** Here we have two cases.
+                 * 1) Loop is empty, out is connected.
+                 * 2) Out is not connected, and start of loop is connected.*/
+                log("Error: one of out ports of 'for' is not connected, check your flow!");
+                log("Warning: execution will continue from start cell");
+                resetExecution();
+            }
+            else if(out_neighbors.length === 2) {
+                /** Two ports are connected, just go neighbors[0],
+                 * e.g. to out.
+                 * Ports are enumerated by order of their groups. */
+                let links = graph.getConnectedLinks(current_cell, {outbound: true});
+
+                for(let i=0; i<links.length; i++) {
+                    let port_name = current_cell.getPort(links[i].attributes.source.port).name;
+                    if(port_name.localeCompare('out') === 0){
+                        let target_id = links[i].attributes.target.id;
+                        let first_neighbor_id = out_neighbors[0].attributes.id;
+
+                        if(target_id.localeCompare(first_neighbor_id) === 0) {
+                            if (finish_cell === out_neighbors[0]) {
+                                log("Error: finish cell inside a loop, check your flow!");
+                                log("Warning: execution will continue from start cell");
+                                resetExecution();
+                                return;
+                            }
+                            else {
+                                current_cell = out_neighbors[0];
+                                return;
+                            }
+                        }
+                        else
+                        {
+                            if (finish_cell === out_neighbors[1]) {
+                                log("Error: finish cell inside a loop, check your flow!");
+                                log("Warning: execution will continue from start cell");
+                                resetExecution();
+                                return;
+                            }
+                            else {
+                                current_cell = out_neighbors[1];
+                                return;
+
+                            }
+                        }
+                    }
+                }
+            }
+            else {
+                /** No case where more than two outbound links can be*/
+                log("Error: too much outbound links for command \"for\"!");
+                log("Warning: execution will continue from start cell");
+                resetExecution();
+            }
+        }
+
+
+    }
+
+    function moveToNextCommandFromOtherCell(res, out_neighbors) {
+        if (out_neighbors.length === 1) {
             /** Case of a standard command with
              * one connected out port */
 
-            /** It may be 'if' with only one connected port!
-             * But two links to a same cell is ok*/
-            if ((code.localeCompare("if") === 0)) {
-                let links = graph.getConnectedLinks(current_cell, {outbound: true});
-                if (links.length < 2) {
-                    log("Error: one of ports of 'if' command is not connected!");
-                    log("Warning: Next execution will continue from start cell");
-                    current_cell = start_cell;
-                }
-            }
-
             /** Successor can be a finish cell*/
             if (finish_cell === out_neighbors[0]) {
-                log("Finish cell reached during execution!");
-                log("Execution can be continued from start cell");
-                current_cell = start_cell;
+                log("Finish cell reached during execution! Execution finished!");
+                log("Tip: Execution can be continued from start cell");
+                resetExecution();
             }
             else {
                 /** Move to a next cell*/
                 current_cell = out_neighbors[0];
             }
-
-        }
-        else if (out_neighbors.length === 2) {
-            /** That is the 'if' case.*/
-            if (code.localeCompare("if") === 0) {
-                if (res.localeCompare("true") === 0) {
-                    /** True */
-                    current_cell = out_neighbors[0];
-                }
-                else {
-                    /** False */
-                    current_cell = out_neighbors[1];
-                }
-            }
-            else {
-                /** Cell with two outbound links which is not 'if' is error. */
-                log("Error: out port cannot be connected with two links!");
-                log("Warning: Next execution will continue from start cell");
-                current_cell = start_cell;
-            }
         }
         else {
-            /** No case where more than two outbound links can be*/
+            /** No case where more than one outbound links can be
+             * for standard command! */
             log("Error: too much outbound links for command " +
                 "\"" + code + "\"" + "!");
-            log("Warning: Next execution will continue from start cell");
-            current_cell = start_cell;
+            log("Warning: execution will continue from start cell");
+            resetExecution();
         }
-        /** Print an empty string between the executions of commands*/
-        log();
     }
 
     function composeFlags(cell) {
@@ -1874,10 +2280,34 @@ use yii\bootstrap\ActiveForm;
         return params;
     }
 
+
+    function resetExecution() {
+        current_cell = start_cell;
+        restoreEntryStatusOnForLoops();
+    }
+
+    function restoreEntryStatusOnForLoops() {
+        let all_cells = graph.getCells(); // Including links
+
+        for (let i = 0; i < all_cells.length; i++) {
+            let graph_element = all_cells[i];
+
+            /** Start and finish cells cannot have this status*/
+            if (!(graph_element === start_cell) && !(graph_element === finish_cell)) {
+
+                /** Avoid links, only cells*/
+                if (graph_element.attributes.type.localeCompare("html.Element") === 0) {
+                    graph_element.attributes.entered_first_time = true;
+                }
+            }
+        }
+    }
+
+
     function collectUserVariables() {
         let all_cells = graph.getCells(); // Including links
 
-        for (i = 0; i < all_cells.length; i++) {
+        for (let i = 0; i < all_cells.length; i++) {
             let graph_element = all_cells[i];
 
             /** Start and finish cells cannot have variables*/
