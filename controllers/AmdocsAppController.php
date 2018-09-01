@@ -109,8 +109,10 @@ class AmdocsAppController extends \yii\web\Controller
             else {
                 file_put_contents('command.sh',$command_script);
 
+                /** There was a case when unable to execute a command.
+                 744 is definitely ok, daemon executes, not user.*/
+                chmod('command.sh',0744);
                 $output = shell_exec('./command.sh');
-
                 unlink('command.sh');
 
                 if($output == null) return '';
