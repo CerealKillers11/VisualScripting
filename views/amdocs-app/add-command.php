@@ -42,10 +42,16 @@ $this->params['breadcrumbs'][] = $this->title;
             <?= $form->field($model, 'name') ?>
 
             <?= $form->field($model, 'parameters')->
-                label('Parameters (e.g. file names/patterns..) :') ?>
+                label('Parameters (e.g. file names/patterns..), everyone starts with "$". <br>
+                 For example, if you have two params, param_one and param_two,<br>
+                 write: $param_one$param_two') ?>
 
             <?= $form->field($model, 'flags')->
-                label('Flags (e.g -l,--no-output..) :') ?>
+                label('Flags (Like -l or --no-output), everyone starts with "$"<br>
+                and divided with its description with "@".<br>
+                For example, if you have two flags, -l with description<br>
+                "Lowercase only" and -f with description "Force",<br>
+                write: $-l@Lowercase only$-f@Force') ?>
 
             <?= $form->field($model, 'code')->textarea(['rows' => 3]) ?>
 
@@ -59,7 +65,7 @@ $this->params['breadcrumbs'][] = $this->title;
 
             <?=
             /** Private - visible only for user, public - for his group */
-            Html::checkbox('privateCommandCheckBox',[],['label' => 'Private (visible only for me)'])
+            Html::checkbox('privateCommandCheckBox',[],['label' => 'Private (visible only for you)'])
             ?>
 
             <br>

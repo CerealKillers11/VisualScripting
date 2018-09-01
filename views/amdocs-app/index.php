@@ -431,12 +431,18 @@ use yii\bootstrap\ActiveForm;
             let flags_str_arr = [];
             if (!(command_flags.localeCompare('') === 0)) {
 
-                // Parse parameters. Divided with '$'.
-                let arr = command_flags.split("$");
-                let i;
-                for (i = 1; i < arr.length; i++) {
+                // Parse flags. Saved in db like $flag@description
+                let flags_with_descriptions = command_flags.split("$");
+                for (let i = 1; i < flags_with_descriptions.length; i++) {
+                    let flag_with_its_desc_arr = flags_with_descriptions[i].split("@");
+
+                    let flag = flag_with_its_desc_arr[0];
+                    let description = flag_with_its_desc_arr[1];
+
                     flags_str_arr.push(
-                        '<input type="checkbox" name=\"' + arr[i] + '\" value=\"' + arr[i] + '\" >' + arr[i] + '</input>');
+                        '<input type="checkbox" name=\"' + flag + '\" value=\"' + flag + '\" >' +
+                            flag + ": " + description +
+                        '</input>');
                     flags_str_arr.push('<br/>');
                 }
             }
@@ -570,7 +576,7 @@ use yii\bootstrap\ActiveForm;
 
             let actual_cell_height =  40 +
                 (parameters_str_arr.length) * 25 +
-                (flags_str_arr.length) * 15 +
+                (flags_str_arr.length) * 22 +
                 have_input_variable * 130 +
                 have_output_variable * 130;
 
@@ -630,19 +636,19 @@ use yii\bootstrap\ActiveForm;
         });
     }
 
-    document.addEventListener("dragstart", function (event) {
-        if (event.target.className === "library_element") {
-            let paper_holder = document.getElementById('rightcolumn');
-            paper_holder.style.border = "3px dotted red";
-        }
-    });
-
-    document.addEventListener("dragend", function (event) {
-        if (event.target.className === "library_element") {
-            let paper_holder = document.getElementById('rightcolumn');
-            paper_holder.style.border = "";
-        }
-    });
+    // document.addEventListener("dragstart", function (event) {
+    //     if (event.target.className === "library_element") {
+    //         let paper_holder = document.getElementById('rightcolumn');
+    //         paper_holder.style.border = "3px dotted red";
+    //     }
+    // });
+    //
+    // document.addEventListener("dragend", function (event) {
+    //     if (event.target.className === "library_element") {
+    //         let paper_holder = document.getElementById('rightcolumn');
+    //         paper_holder.style.border = "";
+    //     }
+    // });
 
     $("#save-log-button").click(function () {
         let logger = document.getElementById('logger');
@@ -1149,7 +1155,7 @@ use yii\bootstrap\ActiveForm;
 
     //Add a logger
     Logger.show();
-    Logger.toggle();
+    // Logger.toggle();
 
     var start_cell;
     var finish_cell;

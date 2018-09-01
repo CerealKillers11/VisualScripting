@@ -57,7 +57,7 @@ $this->params['breadcrumbs'][] = $this->title;
 
                 <?=
                 /** Private - visible only for user, public - for his group */
-                Html::checkbox('privateCommandCheckBox',[],['label' => 'Private (visible only for me)'])
+                Html::checkbox('privateCommandCheckBox',[],['label' => 'Private (visible only for you)'])
                 ?>
 
                 <br>
