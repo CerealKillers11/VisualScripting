@@ -112,7 +112,7 @@ class AmdocsAppController extends \yii\web\Controller
                 $output = shell_exec('./command.sh');
 
                 unlink('command.sh');
-                
+
                 if($output == null) return '';
                 return $output;
             }
@@ -188,9 +188,9 @@ class AmdocsAppController extends \yii\web\Controller
     public function actionAddCommand()
     {
         $form = Yii::$app->request->post('Commands');
+        $max_id = null;
         if($form != null) {
             $model = new Commands();
-
 
             $model->name = $form['name'];
             $model->parameters = $form['parameters'];
@@ -199,12 +199,29 @@ class AmdocsAppController extends \yii\web\Controller
             $model->username = $form['username'];
             $model->description = $form['description'];
 
+
             $private_arr = Yii::$app->request->post('privateCommandCheckBox');
             $model->private = ($private_arr == null)? '0' : '1';
 
-            /** Assign a proper new ID*/
-            $size = count(Commands::find()->all());
-            $model->id  = strval($size+1);
+            /** Assign a proper new ID.
+             The issue is tha fact that id in DB is string,
+             but we want to assign based on max integer value.
+             Iterate on a query and find the biggest num value.*/
+
+            $all = Commands::find()->all();
+
+            $max_id = 0;
+
+            foreach($all as $command) {
+                $arr = $command->toArray();
+                $curr_id_str = $arr['id'];
+                $curr_id_int = intval($curr_id_str);
+                if($curr_id_int > $max_id)
+                {
+                    $max_id = $curr_id_int;
+                }
+            }
+            $model->id = strval($max_id + 1);
 
             if($model->validate()){
                 $model->save();
@@ -215,7 +232,7 @@ class AmdocsAppController extends \yii\web\Controller
             }
         }
         $form = new Commands();
-        return $this->render('add-command', ['model'=>$form]);
+        return $this->render('add-command', ['model'=>$form ]);
     }
 
     public function actionFaq()
