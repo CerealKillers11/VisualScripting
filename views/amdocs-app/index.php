@@ -328,12 +328,25 @@ use yii\bootstrap\ActiveForm;
 
             <?php $execute_form = ActiveForm::begin(['id' => 'execute-form',
                 'fieldConfig' => ['enableLabel' => false], // Do not show the labels in view
-                'action' => 'index.php?r=amdocs-app%2Fexecute', //TO-DO pretty urls
                 'method' => 'post',
             ]); ?>
 
-            <?= Html::submitButton('Execute', ['class' => 'btn btn-primary',
-                'name' => 'execute-button',
+            <?= Html::submitButton('Execute one', ['class' => 'btn btn-primary',
+                'name' => 'execute-one-button',
+            ]) ?>
+            <?php ActiveForm::end(); ?>
+
+        </div>
+
+        <div class="column">
+
+            <?php $execute_flow_form = ActiveForm::begin(['id' => 'execute-flow-form',
+                'fieldConfig' => ['enableLabel' => false], // Do not show the labels in view
+                'method' => 'post',
+            ]); ?>
+
+            <?= Html::submitButton('Execute flow', ['class' => 'btn btn-primary',
+                'name' => 'execute-flow-button',
             ]) ?>
             <?php ActiveForm::end(); ?>
 
@@ -636,19 +649,6 @@ use yii\bootstrap\ActiveForm;
         });
     }
 
-    // document.addEventListener("dragstart", function (event) {
-    //     if (event.target.className === "library_element") {
-    //         let paper_holder = document.getElementById('rightcolumn');
-    //         paper_holder.style.border = "3px dotted red";
-    //     }
-    // });
-    //
-    // document.addEventListener("dragend", function (event) {
-    //     if (event.target.className === "library_element") {
-    //         let paper_holder = document.getElementById('rightcolumn');
-    //         paper_holder.style.border = "";
-    //     }
-    // });
 
     $("#save-log-button").click(function () {
         let logger = document.getElementById('logger');
@@ -717,128 +717,149 @@ use yii\bootstrap\ActiveForm;
 
     $(document).ready(function () {
         $("#execute-form").on('beforeSubmit', function () {
-
-            // Collecting user variables - better to define them at start of a script
-            // and change them on-demand during the flow.
-            // At start, all of them are empty strings.
-            if (current_cell === start_cell) {
-                collectUserVariables();
-                let start_cell_successors = graph.getNeighbors(start_cell);
-                if (start_cell_successors.length === 0) {
-                    log("Error: Start must be connected. Aborting execution.");
-                    return false;
-                }
-                else {
-                    current_cell = start_cell_successors[0];
-                }
-            }
-
-            /** Try to execute one command - current cell,
-             * and move to next. What is included in execution:
-             * 1) Collect variables from model, take input value from our array.
-             * 2) Construct a command inside small script - described later.
-             * 3) Send command to server via AJAX with script as parameter.
-             * 4) Execute command on a server and take return value and output.
-             * 5) Print the output to a log
-             * 6) Save variables in our array*/
-
-
-            /** At first, taking input of current cell*/
-            /** Input can be not only a variable, also some value. */
-
-            let input_var_or_string = "";
-            let splitted_input = current_cell.attributes.input_var_in.split("$");
-
-            if (splitted_input.length > 1 && splitted_input[0].localeCompare("") === 0) {
-
-                /** This is variable because starts from $ */
-                input_var_or_string = user_variables[splitted_input[1]];
-            }
-            else {
-
-                /** This is just a some user value, not variable.
-                 * User values must not contain dollars! */
-                input_var_or_string = splitted_input[0];
-            }
-
-            /** Constructing the current command's script. */
-            let script = "";
-
-            /** Interesting for shell scripts only */
-            let execution_path = document.getElementById('execution_path').value;
-
-            let code = current_cell.attributes.input_command_code;
-
-            if (code.localeCompare("if") === 0) {
-                // The only param of 'if' is a condition
-                let condition = composeParams(current_cell);
-                script = buildConditionEvalScript(condition);
-            }
-            else if (code.localeCompare("for") === 0) {
-                executeForLoopCell();
-                return false;
-            }
-            else if (code.localeCompare("assignment") === 0) {
-                let assignment_res = executeAssignment();
-
-                if(assignment_res) {
-                    /** There is no need for res so it is empty string. */
-                    moveToNextCommand("");
-                }
-                else {
-                    log("Warning: execution will continue from start cell");
-                    resetExecution();
-                    log("");
-                }
-                return false;
-            }
-            else if(code.localeCompare("free equation") === 0) {
-                script = "cd "+ execution_path + "\n" +
-                    current_cell.attributes.input_params["equation"];
-            }
-            else {
-                script = buildOtherCommandScript(input_var_or_string, execution_path);
-            }
-
-            /** Sending the script to a server via AJAX */
-            $.ajax({
-                url: 'index.php?r=amdocs-app%2Fexecute',
-                type: 'POST',
-                data: 'script=' + script + '&' + 'code=' + code, //POST-style
-                success: function (res) {
-
-                    /** Cut the possible \n at end of result */
-                    if (res.charAt(res.length - 1) === '\n') {
-                        res = res.slice(0, res.length - 1);
-                    }
-
-
-                    let code = current_cell.attributes.input_command_code;
-
-                    let log_output = (res.localeCompare("") === 0) ?
-
-                        "Executed command: " + code + ", no output"
-                        :
-                        "Executed command: " + code + ", output: " + res;
-
-                    log(log_output);
-
-                    /** Now need to assign the output variable, if was. */
-                    assignVariableFromOutput(res);
-
-                    /** Go to next command. Decide based on connected ports. */
-                    moveToNextCommand(res);
-
-                },
-                error: function () {
-                    alert('Error!');
-                }
-            });
-
-            /** We don't really going to send a form - avoiding refreshing of page */
-            return false;
+            execute_whole = false;
+            return executeFlow();
         });
     });
+
+    $(document).ready(function () {
+        $("#execute-flow-form").on('beforeSubmit', function() {
+            execute_whole = true;
+            return executeFlow();
+        });
+    });
+
+
+    function executeFlow() {
+
+        // Collecting user variables - better to define them at start of a script
+        // and change them on-demand during the flow.
+        // At start, all of them are empty strings.
+        if (current_cell === start_cell) {
+            collectUserVariables();
+            let start_cell_successors = graph.getNeighbors(start_cell);
+            if (start_cell_successors.length === 0) {
+                log("Error: Start must be connected. Aborting execution.");
+                return false;
+            }
+            else {
+                current_cell = start_cell_successors[0];
+            }
+        }
+
+        /** Try to execute one command - current cell,
+         * and move to next. What is included in execution:
+         * 1) Collect variables from model, take input value from our array.
+         * 2) Construct a command inside small script - described later.
+         * 3) Send command to server via AJAX with script as parameter.
+         * 4) Execute command on a server and take return value and output.
+         * 5) Print the output to a log
+         * 6) Save variables in our array*/
+
+
+        /** At first, taking input of current cell*/
+        /** Input can be not only a variable, also some value. */
+
+        let input_var_or_string = "";
+        let splitted_input = current_cell.attributes.input_var_in.split("$");
+
+        if (splitted_input.length > 1 && splitted_input[0].localeCompare("") === 0) {
+
+            /** This is variable because starts from $ */
+            input_var_or_string = user_variables[splitted_input[1]];
+        }
+        else {
+
+            /** This is just a some user value, not variable.
+             * User values must not contain dollars! */
+            input_var_or_string = splitted_input[0];
+        }
+
+        /** Constructing the current command's script. */
+        let script = "";
+
+        /** Interesting for shell scripts only */
+        let execution_path = document.getElementById('execution_path').value;
+
+        let code = current_cell.attributes.input_command_code;
+
+        if (code.localeCompare("if") === 0) {
+            // The only param of 'if' is a condition
+            let condition = composeParams(current_cell);
+            script = buildConditionEvalScript(condition);
+        }
+        else if (code.localeCompare("for") === 0) {
+            executeForLoopCell();
+            return false;
+        }
+        else if (code.localeCompare("assignment") === 0) {
+            let assignment_res = executeAssignment();
+
+            if(assignment_res) {
+                /** There is no need for res so it is empty string. */
+                moveToNextCommand("");
+
+                if((execute_whole)&&(current_cell !== start_cell)) {
+                    executeFlow();
+                }
+            }
+            else {
+                log("Warning: execution will continue from start cell");
+                resetExecution();
+                log("");
+            }
+            return false;
+        }
+        else if(code.localeCompare("free equation") === 0) {
+            script = "cd "+ execution_path + "\n" +
+                current_cell.attributes.input_params["equation"];
+        }
+        else {
+            script = buildOtherCommandScript(input_var_or_string, execution_path);
+        }
+
+        /** Sending the script to a server via AJAX */
+        $.ajax({
+            url: 'index.php?r=amdocs-app%2Fexecute',
+            type: 'POST',
+            data: 'script=' + script + '&' + 'code=' + code, //POST-style
+            success: function (res) {
+
+                /** Cut the possible \n at end of result */
+                if (res.charAt(res.length - 1) === '\n') {
+                    res = res.slice(0, res.length - 1);
+                }
+
+                let code = current_cell.attributes.input_command_code;
+
+                let log_output = (res.localeCompare("") === 0) ?
+
+                    "Executed command: " + code + ", no output"
+                    :
+                    "Executed command: " + code + ", output: " + res;
+
+                log(log_output);
+
+                /** Now need to assign the output variable, if was. */
+                assignVariableFromOutput(res);
+
+                /** Go to next command. Decide based on connected ports. */
+                moveToNextCommand(res);
+
+                if((execute_whole)&&(current_cell !== start_cell)) {
+                    executeFlow();
+                }
+
+            },
+            error: function () {
+                alert('Internal server error during AJAX request!');
+            }
+        });
+
+        /** We don't really going to send a form - avoiding refreshing of page */
+        return false;
+    }
+
 
     /**###############################################################*/
 
@@ -867,8 +888,6 @@ use yii\bootstrap\ActiveForm;
 
         }, joint.dia.Link.prototype.defaults),
     });
-
-
 
     var graph = new joint.dia.Graph();
 
@@ -1129,6 +1148,8 @@ use yii\bootstrap\ActiveForm;
         }
     });
 
+
+    // TODO: Implement a scaling for html elements here and iside a views
     var paper_scale = 1;
 
     // $(document).ready(function () {
@@ -1176,6 +1197,10 @@ use yii\bootstrap\ActiveForm;
      * we need to save them during the execution of commands.
      * Pay attention - this is associative array. */
     var user_variables = [];
+
+
+
+    var execute_whole = false;
 
 
     /**###############################################################*/
@@ -1938,6 +1963,11 @@ use yii\bootstrap\ActiveForm;
                  *  And this is the work for
                  *  "moveToNextCommand".*/
                 moveToNextCommand(res);
+
+                if((execute_whole)&&(current_cell !== start_cell)) {
+                    executeFlow();
+                }
+
             },
             error: function () {
                 alert('Internal server error while checking condition of for-loop!');
@@ -1976,7 +2006,6 @@ use yii\bootstrap\ActiveForm;
          * In case of loop and if we need to make decisions based on ports.*/
 
         let out_neighbors = graph.getNeighbors(current_cell, {outbound: true});
-        console.log("");
 
         if (out_neighbors.length === 0) {
             log("Warning: unexpected end of flow - not connected to finish cell!");
