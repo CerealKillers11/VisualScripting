@@ -1,9 +1,12 @@
 <?php
 /* @var $this yii\web\View */
+
+$this->title='About';
+$this->params['breadcrumbs'][] = $this->title;
 ?>
-<h1>amdocs-app/about</h1>
+
+<h1>VisualScripting Industrial Project</h1>
 
 <p>
-    You may change the content of this page by modifying
-    the file <code><?= __FILE__; ?></code>.
+    Created by Max Lipatrov and Adam Elgressy, students from Technion for Amdocs Inc. in 2018.
 </p>

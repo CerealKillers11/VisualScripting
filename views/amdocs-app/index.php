@@ -31,53 +31,19 @@ use yii\bootstrap\ActiveForm;
 
         }
 
-        /* Header/Blog Title */
-        .header {
-            padding: 10px;
-            text-align: center;
-            background: lightslategrey;
-            margin: 0px;
-        }
-
-        .header h1 {
-            font-size: 30px;
-        }
-
-        /* Style the top navigation bar */
-        .topnav {
-            overflow: hidden;
-            background-color: #333;
-        }
-
-        /* Style the topnav links */
-        .topnav a {
-            float: left;
-            display: block;
-            color: #f2f2f2;
-            text-align: center;
-            padding: 14px 16px;
-            text-decoration: none;
-        }
-
-        /* Change color on hover */
-        .topnav a:hover {
-            background-color: #ddd;
-            color: black;
-        }
 
         /* Create two unequal columns that floats next to each other */
         /* Left column */
-        .leftcolumn {
+        .left_column {
             float: left;
             width: 25%;
         }
 
         /* Right column */
-        .rightcolumn {
+        .right_column {
 
             width: 75%;
             background-color: #f1f1f1;
-            /*padding-left: 20px;*/
             overflow: scroll;
         }
 
@@ -107,15 +73,17 @@ use yii\bootstrap\ActiveForm;
             padding-bottom: 10px;
         }
 
-        /* Responsive layout - when the screen is less than 800px wide, make the two columns stack on top of each other instead of next to each other */
+        /* Responsive layout - when the screen is less than 800px wide,
+         make the two columns stack on top of each other instead of next to each other */
         @media screen and (max-width: 800px) {
-            .leftcolumn, .rightcolumn {
+            .left_column, .right_column {
                 width: 100%;
                 padding: 0;
             }
         }
 
-        /* Responsive layout - when the screen is less than 400px wide, make the navigation links stack on top of each other instead of next to each other */
+        /** Responsive layout - when the screen is less than 400px wide,
+         make the navigation links stack on top of each other instead of next to each other */
         @media screen and (max-width: 400px) {
             .topnav a {
                 float: none;
@@ -251,17 +219,6 @@ use yii\bootstrap\ActiveForm;
             bottom: 28px;
         }
 
-        .html-element input {
-            /*position: relative;*/
-            /*bottom: 0;*/
-            /*left: 0;*/
-            /*right: 0;*/
-            /*border: none;*/
-            /*color: #333;*/
-            /*padding: 5px;*/
-            /*height: 16px;*/
-        }
-
         .html-element label {
             color: #333;
             text-shadow: 1px 0 0 lightgray;
@@ -360,7 +317,7 @@ use yii\bootstrap\ActiveForm;
     </div>
 
     <div class="row">
-        <div class="leftcolumn">
+        <div class="left_column">
             <div class="library_menu" style="height: 600px;">
                 <button class="accordion">Basic Commands</button>
                 <div class="panel">
@@ -416,7 +373,7 @@ use yii\bootstrap\ActiveForm;
             </div>
         </div>
 
-        <div class="rightcolumn" id="rightcolumn" style="height: 600px;">
+        <div class="right_column" id="rightcolumn" style="height: 600px;">
             <div class="paper_holder" id="paper_holder"
                  ondragover="allowDrop(event);"
                  ondrop="addElementToGraph(event);"></div>
@@ -427,7 +384,7 @@ use yii\bootstrap\ActiveForm;
 
         function addElementToGraph(event) {
 
-            // Firstly, achieve the transferred from library element command parameters.
+            // First, achieve the transferred from library element command parameters.
             // -------------------------------------------------------------------------
 
             let command_id = event.dataTransfer.getData("command_id");
@@ -473,10 +430,6 @@ use yii\bootstrap\ActiveForm;
                     parameters_str_arr.push('<br/>');
                 }
             }
-
-            // Create a custom view for that element that displays an HTML div above it.
-            // -------------------------------------------------------------------------
-
 
             // Template string can vary depending on command, e.g. 'for' and 'if'.
             // -------------------------------------------------------------------------
@@ -651,28 +604,8 @@ use yii\bootstrap\ActiveForm;
 
 
     $("#save-log-button").click(function () {
-        let logger = document.getElementById('logger');
-        NodeList.prototype.forEach = Array.prototype.forEach;
-        let children = logger.childNodes;
 
-        let log_message = "";
-        children.forEach(function(item){
-
-            if(item.className.localeCompare("log-header") === 0) {
-                log_message += item.textContent + "\n";
-            }
-            else if (item.className.localeCompare("log-timestamp") === 0) {
-                log_message += item.textContent;
-            }
-            else if (item.className.localeCompare("log-message") === 0) {
-                log_message += item.textContent + "\n";
-            }
-            else {
-                log_message +=("\n");
-            }
-
-            /** textContent */
-        });
+        let log_message = parseLogMessage();
         console.log(log_message);
 
         let json_log = JSON.stringify(log_message);
@@ -717,6 +650,9 @@ use yii\bootstrap\ActiveForm;
 
     $(document).ready(function () {
         $("#execute-form").on('beforeSubmit', function () {
+
+            /** A flag that will be checked inside.
+             * Execute one command only. */
             execute_whole = false;
             return executeFlow();
         });
@@ -724,17 +660,22 @@ use yii\bootstrap\ActiveForm;
 
     $(document).ready(function () {
         $("#execute-flow-form").on('beforeSubmit', function() {
+            /** A flag that will be checked inside.
+             * Execute the flow till reaching finish cell. */
             execute_whole = true;
             return executeFlow();
         });
     });
 
-
+    /** A central executing function.
+     * If a global flag execute_whole enabled,
+     * works in recursive manner because of the fact
+     * that we can't execute AJAX request in a loop.*/
     function executeFlow() {
 
-        // Collecting user variables - better to define them at start of a script
-        // and change them on-demand during the flow.
-        // At start, all of them are empty strings.
+         /** Collecting used in script user variables - better to assign them
+         * and change them on-demand during the flow.
+         * At start, all of them are empty strings. */
         if (current_cell === start_cell) {
             collectUserVariables();
             let start_cell_successors = graph.getNeighbors(start_cell);
@@ -749,7 +690,7 @@ use yii\bootstrap\ActiveForm;
 
         /** Try to execute one command - current cell,
          * and move to next. What is included in execution:
-         * 1) Collect variables from model, take input value from our array.
+         * 1) Collect input value/variable from model, take input value from our array.
          * 2) Construct a command inside small script - described later.
          * 3) Send command to server via AJAX with script as parameter.
          * 4) Execute command on a server and take return value and output.
@@ -760,59 +701,33 @@ use yii\bootstrap\ActiveForm;
         /** At first, taking input of current cell*/
         /** Input can be not only a variable, also some value. */
 
-        let input_var_or_string = "";
-        let splitted_input = current_cell.attributes.input_var_in.split("$");
-
-        if (splitted_input.length > 1 && splitted_input[0].localeCompare("") === 0) {
-
-            /** This is variable because starts from $ */
-            input_var_or_string = user_variables[splitted_input[1]];
-        }
-        else {
-
-            /** This is just a some user value, not variable.
-             * User values must not contain dollars! */
-            input_var_or_string = splitted_input[0];
-        }
+        let input_var_or_string = getInputVariableFromCurrentCell();
 
         /** Constructing the current command's script. */
-        let script = "";
 
         /** Interesting for shell scripts only */
         let execution_path = document.getElementById('execution_path').value;
-
         let code = current_cell.attributes.input_command_code;
+        let script = "";
 
-        if (code.localeCompare("if") === 0) {
-            // The only param of 'if' is a condition
-            let condition = composeParams(current_cell);
-            script = buildConditionEvalScript(condition);
-        }
-        else if (code.localeCompare("for") === 0) {
+        /** Assignment and for-loop executed in another way. */
+        if (code.localeCompare("for") === 0) {
             executeForLoopCell();
             return false;
         }
         else if (code.localeCompare("assignment") === 0) {
-            let assignment_res = executeAssignment();
-
-            if(assignment_res) {
-                /** There is no need for res so it is empty string. */
-                moveToNextCommand("");
-
-                if((execute_whole)&&(current_cell !== start_cell)) {
-                    executeFlow();
-                }
-            }
-            else {
-                log("Warning: execution will continue from start cell");
-                resetExecution();
-                log("");
-            }
+            executeAssignment();
             return false;
         }
+
+        /** For if and other commands we need to build the script. */
+        else if (code.localeCompare("if") === 0) {
+            // The only param of 'if' is a condition
+            let condition = composeParams(current_cell);
+            script = buildConditionEvalScript(condition);
+        }
         else if(code.localeCompare("free equation") === 0) {
-            script = "cd "+ execution_path + "\n" +
-                current_cell.attributes.input_params["equation"];
+            script = buildFreeEquationScript(execution_path);
         }
         else {
             script = buildOtherCommandScript(input_var_or_string, execution_path);
@@ -829,13 +744,11 @@ use yii\bootstrap\ActiveForm;
                 if (res.charAt(res.length - 1) === '\n') {
                     res = res.slice(0, res.length - 1);
                 }
-
                 let code = current_cell.attributes.input_command_code;
-
                 let log_output = (res.localeCompare("") === 0) ?
 
                     "Executed command: " + code + ", no output"
-                    :
+                                            :
                     "Executed command: " + code + ", output: " + res;
 
                 log(log_output);
@@ -1689,12 +1602,20 @@ use yii\bootstrap\ActiveForm;
             splitted_variable[1].localeCompare("") === 0) {
 
             log("Error: variable name must start with \"$\" and cannot be empty.");
-            return false;
+            log("Warning: execution will continue from start cell");
+            resetExecution();
+            log("");
         }
         else {
             user_variables[splitted_variable[1]] = value;
             log("Executed command: assignment, variable assigned: " + variable + " = \"" + value + "\"");
-            return true;
+
+            /** There is no need for res so it is empty string. */
+            moveToNextCommand("");
+
+            if((execute_whole)&&(current_cell !== start_cell)) {
+                executeFlow();
+            }
         }
     }
 
@@ -1752,6 +1673,30 @@ use yii\bootstrap\ActiveForm;
         }
     }
 
+
+
+    function getInputVariableFromCurrentCell() {
+        let input_var_or_string = "";
+        let splitted_input = current_cell.attributes.input_var_in.split("$");
+
+        if (splitted_input.length > 1 && splitted_input[0].localeCompare("") === 0) {
+
+            /** This is variable because starts from $ */
+            input_var_or_string = user_variables[splitted_input[1]];
+        }
+        else {
+
+            /** This is just a some user value, not variable.
+             * User values must not contain dollars! */
+            input_var_or_string = splitted_input[0];
+        }
+        return input_var_or_string;
+    }
+
+    function buildFreeEquationScript(execution_path) {
+        return "cd "+ execution_path + "\n" +
+            current_cell.attributes.input_params["equation"];
+    }
 
     function buildOtherCommandScript(input, execution_path) {
 
@@ -2324,6 +2269,29 @@ use yii\bootstrap\ActiveForm;
         return params;
     }
 
+
+    function parseLogMessage() {
+        let logger = document.getElementById('logger');
+        NodeList.prototype.forEach = Array.prototype.forEach;
+        let children = logger.childNodes;
+
+        let log_message = "";
+        children.forEach(function(item){
+
+            if(item.className.localeCompare("log-header") === 0) {
+                log_message += item.textContent + "\n";
+            }
+            else if (item.className.localeCompare("log-timestamp") === 0) {
+                log_message += item.textContent;
+            }
+            else if (item.className.localeCompare("log-message") === 0) {
+                log_message += item.textContent + "\n";
+            }
+            else {
+                log_message +=("\n");
+            }
+        });
+    }
 
     function resetExecution() {
         current_cell = start_cell;

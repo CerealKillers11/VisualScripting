@@ -84,13 +84,13 @@
 
         /* Create two unequal columns that floats next to each other */
         /* Left column */
-        .leftcolumn {
+        .left_column {
             float: left;
             width: 25%;
         }
 
         /* Right column */
-        .rightcolumn {
+        .right_column {
             float: left;
             width: 75%;
             background-color: #f1f1f1;
@@ -134,7 +134,7 @@
 
         /* Responsive layout - when the screen is less than 800px wide, make the two columns stack on top of each other instead of next to each other */
         @media screen and (max-width: 800px) {
-            .leftcolumn, .rightcolumn {
+            .left_column, .right_column {
                 width: 100%;
                 padding: 0;
             }

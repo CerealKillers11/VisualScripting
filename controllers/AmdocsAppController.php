@@ -25,60 +25,6 @@ class AmdocsAppController extends \yii\web\Controller
         return $this->render('about');
     }
 
-    public function actionAdd()
-    {
-        return $this->render('add');
-    }
-
-    public function actionBuild()
-    {
-
-        if(Yii::$app->request->isAjax){
-            return 'Запрос принят!';
-        }
-        $form = Yii::$app->request->post('BuildForm');
-        $test = Yii::$app->request->post('ExecuteForm');
-
-        $kuku = $test['flow'];
-
-        /** We want to transfer the full script to be approved by user before is is executed. */
-
-        $prefixes_str = $form['prefixes']; //Per command, like sudo, etc.
-        $names_str = $form['names'];    //Actual commands
-        $flags_str = $form['flags'];       //Flags per command, like -l or --default
-        $params_str = $form['params'];     //Params per command, like input files, etc.
-
-        $prefixes = explode(",",$prefixes_str);
-        $names = explode(",",$names_str);
-        $flags = explode(",",$flags_str);
-        $params = explode(",",$params_str);
-
-        $full_command = '';
-
-        for($i=0;$i<count($prefixes);$i++){
-            $prefix = $prefixes[$i];
-            $name= $names[$i];
-            $params_not_parsed = $params[$i];
-            $flags_not_parsed = $flags[$i];
-
-
-            //Parsing params
-            $delimiter = array("$");
-            $space = array(" ");
-
-            $params = str_replace($delimiter,$space,$params_not_parsed);
-            $flags = str_replace($delimiter,$space,$flags_not_parsed);
-
-            $command = $prefix . ' ' . $name .  ' ' . $flags .  ' ' . $params . "\n"; // Like "sudo rm -rf ProjectFolder"
-
-            $full_command .= $command;
-        }
-
-        $model = new Commands(); //For saving the script
-
-        return $this->render('build',['model'=> $model,'script' => $kuku]);
-    }
-
     public function actionExecute(){
         if(Yii::$app->request->isAjax){
             $data = Yii::$app->request->post();
@@ -237,11 +183,6 @@ class AmdocsAppController extends \yii\web\Controller
         return $this->render('add-command', ['model'=>$form ]);
     }
 
-    public function actionFaq()
-    {
-        return $this->render('faq');
-    }
-
     public function actionHome()
     {
         return $this->render('home');
@@ -320,38 +261,6 @@ class AmdocsAppController extends \yii\web\Controller
         Yii::$app->user->logout();
 
         return $this->goHome();
-    }
-
-    public function actionSave()
-    {
-        $form = Yii::$app->request->post('Commands');
-        if($form != null) {
-            $model = new Commands();
-
-
-            $model->name = $form['name'];
-            $model->parameters = $form['parameters'];
-            $model->flags = $form['flags'];
-            $model->code = $form['code'];
-            $model->username = $form['username'];
-            $model->description = $form['description'];
-
-            $private_arr = Yii::$app->request->post('privateCommandCheckBox');
-            $model->private = ($private_arr == null)? '0' : '1';
-
-            /** Assign a proper new ID*/
-            $size = count(Commands::find()->all());
-            $model->id  = strval($size+1);
-
-            if($model->validate()){
-                $model->save();
-                Yii::$app->session->setFlash('commandsSubmitted');
-            }
-            else{
-                Yii::$app->session->setFlash('validationFailed');
-            }
-        }
-        return $this->render('save');
     }
 
     public function actionSaveLog(){
